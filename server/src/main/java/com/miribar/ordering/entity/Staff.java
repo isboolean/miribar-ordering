@@ -9,6 +9,7 @@ public class Staff {
     private Long storeId;
     private String username;
     private String password;
+    private String phone;
     private String realName;
     private Integer role;
     private Integer status;

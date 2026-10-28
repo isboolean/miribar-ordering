@@ -105,6 +105,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = new Order();
         order.setStoreId(request.getStoreId());
         order.setTableId(request.getTableId());
+        order.setCustomerId(request.getCustomerId());
         order.setOrderNo(orderNo);
         order.setStatus(0); // 待接单
         order.setPaymentMethod(0); // 线下

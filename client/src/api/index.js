@@ -1,16 +1,68 @@
 const BASE = '/api'
+const TOKEN_KEY = 'miribar_token'
+const CUSTOMER_TOKEN_KEY = 'miribar_customer_token'
+
+function getToken() {
+  return localStorage.getItem(TOKEN_KEY) || ''
+}
+
+function getCustomerToken() {
+  return localStorage.getItem(CUSTOMER_TOKEN_KEY) || ''
+}
+
+function pickToken(kind) {
+  return kind === 'customer' ? getCustomerToken() : getToken()
+}
+
+function handle401() {
+  localStorage.removeItem(TOKEN_KEY)
+  localStorage.removeItem('miribar_staff')
+  if (window.location.pathname !== '/login') {
+    window.location.href = '/login'
+  }
+}
 
 async function request(url, options = {}) {
+  const { auth, ...rest } = options
+  const token = pickToken(auth)
   const res = await fetch(BASE + url, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    ...options
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...rest.headers
+    },
+    ...rest
   })
   const data = await res.json()
   if (data.code !== 200) {
+    if (data.code === 401) {
+      handle401()
+    }
     throw new Error(data.message || '请求失败')
   }
   return data.data
 }
+
+// ========== 员工认证 ==========
+export const getCaptcha = () => request('/auth/captcha')
+export const login = (username, password, captchaId, captchaCode) =>
+  request('/auth/login', { method: 'POST', body: JSON.stringify({ username, password, captchaId, captchaCode }) })
+export const sendStaffSms = (phone, captchaId, captchaCode) =>
+  request('/auth/staff/sms', { method: 'POST', body: JSON.stringify({ phone, captchaId, captchaCode }) })
+export const staffSmsLogin = (phone, code) =>
+  request('/auth/staff/sms-login', { method: 'POST', body: JSON.stringify({ phone, code }) })
+export const getMe = () => request('/auth/me')
+
+// ========== 顾客认证 ==========
+export const sendSmsCode = (phone, captchaId, captchaCode) =>
+  request('/auth/customer/sms', { method: 'POST', body: JSON.stringify({ phone, captchaId, captchaCode }) })
+export const customerLogin = (phone, code) =>
+  request('/auth/customer/login', { method: 'POST', body: JSON.stringify({ phone, code }) })
+export const customerPasswordLogin = (phone, password, captchaId, captchaCode) =>
+  request('/auth/customer/password-login', { method: 'POST', body: JSON.stringify({ phone, password, captchaId, captchaCode }) })
+export const setCustomerPassword = (password) =>
+  request('/auth/customer/password/set', { method: 'POST', auth: 'customer', body: JSON.stringify({ password }) })
+export const getCustomerMe = () => request('/auth/customer/me', { auth: 'customer' })
 
 // ========== 门店 ==========
 export const getStore = (id) => request(`/store/${id}`)
@@ -34,7 +86,7 @@ export const getTableBill = (id) => request(`/table/${id}/bill`)
 export const checkoutTable = (id, params = '') => request(`/table/${id}/checkout${params ? '?' + params : ''}`, { method: 'POST' })
 
 // ========== 订单 ==========
-export const createOrder = (data) => request('/order', { method: 'POST', body: JSON.stringify(data) })
+export const createOrder = (data) => request('/order', { method: 'POST', auth: 'customer', body: JSON.stringify(data) })
 export const getOrderDetail = (id) => request(`/order/${id}`)
 export const getTableOrders = (tableId) => request(`/order/table/${tableId}`)
 export const getStoreActiveOrders = (storeId) => request(`/order/store/${storeId}/active`)

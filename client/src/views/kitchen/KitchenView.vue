@@ -15,6 +15,7 @@
           <div class="ws-dot" :class="{ connected: wsConnected }"></div>
           <span>{{ wsConnected ? '已连接' : '未连接' }}</span>
         </div>
+        <button class="logout-btn" @click="handleLogout">退出（{{ auth.displayName }}）</button>
       </div>
     </header>
 
@@ -83,8 +84,18 @@
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, defineComponent, h } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { getStoreActiveOrders, acceptOrder as apiAccept, completeOrder as apiComplete, rejectOrder as apiReject } from '@/api'
 import { useWebSocket } from '@/composables/useWebSocket'
+
+const router = useRouter()
+const auth = useAuthStore()
+
+function handleLogout() {
+  auth.logout()
+  router.replace('/login')
+}
 
 const STORE_ID = 1
 const BAR_TYPES = [0, 2]
@@ -307,4 +318,7 @@ const OrderCard = defineComponent({
 .reject-reasons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .reason-tag { padding: 6px 12px; border-radius: 16px; border: 1px solid var(--border); background: transparent; color: var(--text); font-size: 12px; cursor: pointer; }
 .reason-tag.selected { border-color: var(--danger); background: rgba(231,76,60,.15); color: var(--danger); }
+
+.logout-btn { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text); font-size: 12px; cursor: pointer; }
+.logout-btn:hover { border-color: var(--danger); color: var(--danger); }
 </style>

@@ -8,6 +8,7 @@ public class Customer {
     private Long id;
     private String openid;
     private String phone;
+    private String password;
     private String nickname;
     private String avatarUrl;
     private LocalDateTime createdAt;

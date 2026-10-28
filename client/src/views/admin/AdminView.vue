@@ -2,7 +2,10 @@
   <div class="admin-page">
     <header class="header">
       <h1>⚙️ MiriBar 管理后台</h1>
-      <div style="font-size:13px;opacity:.8">MiriBar 旗舰店 | 管理员</div>
+      <div class="header-user">
+        <span style="font-size:13px;opacity:.8">{{ auth.displayName }} | {{ roleText }}</span>
+        <button class="btn btn-outline btn-sm" @click="handleLogout">退出登录</button>
+      </div>
     </header>
 
     <div class="layout">
@@ -223,12 +226,24 @@
 
 <script setup>
 import { ref, reactive, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import {
   getTables, addTable, updateTable, deleteTable, clearTable,
   adminGetCategories, adminAddCategory, adminUpdateCategory, adminDeleteCategory,
   adminGetProducts, adminAddProduct, adminUpdateProductStatus, adminDeleteProduct,
   getTableBill, checkoutTable
 } from '@/api'
+
+const router = useRouter()
+const auth = useAuthStore()
+const roleMap = { 0: '吧台员工', 1: '后厨员工', 2: '店长', 3: '平台管理员' }
+const roleText = ref(roleMap[auth.staff?.role] || '员工')
+
+function handleLogout() {
+  auth.logout()
+  router.replace('/login')
+}
 
 const STORE_ID = 1
 const typeMap = { 0: '酒水', 1: '小食', 2: '套餐' }

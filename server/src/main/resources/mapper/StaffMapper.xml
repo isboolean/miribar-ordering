@@ -10,15 +10,20 @@
         SELECT * FROM t_staff WHERE username = #{username}
     </select>
 
+    <select id="selectByPhone" resultType="Staff">
+        SELECT * FROM t_staff WHERE phone = #{phone} LIMIT 1
+    </select>
+
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO t_staff (store_id, username, password, real_name, role, status)
-        VALUES (#{storeId}, #{username}, #{password}, #{realName}, #{role}, #{status})
+        INSERT INTO t_staff (store_id, username, password, phone, real_name, role, status)
+        VALUES (#{storeId}, #{username}, #{password}, #{phone}, #{realName}, #{role}, #{status})
     </insert>
 
     <update id="update">
         UPDATE t_staff
         <set>
             <if test="password != null">password = #{password},</if>
+            <if test="phone != null">phone = #{phone},</if>
             <if test="realName != null">real_name = #{realName},</if>
             <if test="role != null">role = #{role},</if>
             <if test="status != null">status = #{status},</if>

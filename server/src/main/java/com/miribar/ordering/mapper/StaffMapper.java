@@ -11,6 +11,8 @@ public interface StaffMapper {
 
     Staff selectByUsername(@Param("username") String username);
 
+    Staff selectByPhone(@Param("phone") String phone);
+
     int insert(Staff staff);
 
     int update(Staff staff);

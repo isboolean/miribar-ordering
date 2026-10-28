@@ -4,6 +4,10 @@
     <header class="header">
       <h1>🍸 MiriBar 点餐</h1>
       <div class="table-info">{{ tableText }}</div>
+      <div class="user-row">
+        <button v-if="!customer.isLoggedIn" class="login-chip" @click="showLogin = true">👤 登录</button>
+        <span v-else class="user-chip" @click="handleCustomerLogout">{{ customer.displayName }} ▾</span>
+      </div>
       <div class="warning-banner">⚠️ 未成年人禁止饮酒 | 理性饮酒，切勿酗酒</div>
     </header>
 
@@ -61,6 +65,9 @@
 
     <!-- Toast -->
     <div v-if="toastMsg" class="toast-container"><div class="toast-msg">{{ toastMsg }}</div></div>
+
+    <!-- 顾客登录弹窗 -->
+    <CustomerLoginModal v-model:visible="showLogin" @success="onCustomerLogin" />
   </div>
 </template>
 
@@ -68,13 +75,26 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
+import { useCustomerStore } from '@/stores/customer'
 import { getMenu, getTableByQrToken, getTableById, createOrder } from '@/api'
 import ProductCard from '@/components/ProductCard.vue'
 import CartBar from '@/components/CartBar.vue'
+import CustomerLoginModal from '@/components/CustomerLoginModal.vue'
 
 const router = useRouter()
 const route = useRoute()
 const cart = useCartStore()
+const customer = useCustomerStore()
+const showLogin = ref(false)
+
+function onCustomerLogin() {
+  showToast(`欢迎，${customer.displayName}`)
+}
+
+function handleCustomerLogout() {
+  customer.logout()
+  showToast('已退出登录')
+}
 
 const storeId = ref(1)
 const tableId = ref(null)
@@ -196,6 +216,16 @@ function showToast(msg) {
 }
 .header h1 { font-size: 18px; font-weight: 600; }
 .table-info { font-size: 13px; opacity: .85; margin-top: 4px; }
+.user-row { position: absolute; top: 14px; right: 16px; }
+.login-chip {
+  background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.4);
+  color: #fff; border-radius: 20px; padding: 5px 14px; font-size: 12px; cursor: pointer;
+}
+.login-chip:hover { background: rgba(255,255,255,.3); }
+.user-chip {
+  background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.35);
+  color: #fff; border-radius: 20px; padding: 5px 14px; font-size: 12px; cursor: pointer;
+}
 .warning-banner {
   background: rgba(231,76,60,.2); border: 1px solid var(--danger);
   border-radius: 6px; padding: 8px 12px; margin-top: 10px;

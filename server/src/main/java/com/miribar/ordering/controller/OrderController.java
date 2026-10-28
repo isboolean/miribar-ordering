@@ -1,9 +1,11 @@
 package com.miribar.ordering.controller;
 
+import com.miribar.ordering.common.JwtUtil;
 import com.miribar.ordering.common.Result;
 import com.miribar.ordering.dto.OrderRequest;
 import com.miribar.ordering.dto.OrderVO;
 import com.miribar.ordering.service.OrderService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,16 +15,26 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final JwtUtil jwtUtil;
 
-    public OrderController(OrderService orderService) {
+    public OrderController(OrderService orderService, JwtUtil jwtUtil) {
         this.orderService = orderService;
+        this.jwtUtil = jwtUtil;
     }
 
     /**
-     * 创建订单（顾客下单）
+     * 创建订单（顾客下单）。若携带顾客 token，则自动关联 customer_id
      */
     @PostMapping
-    public Result<OrderVO> createOrder(@RequestBody OrderRequest request) {
+    public Result<OrderVO> createOrder(@RequestBody OrderRequest request, HttpServletRequest httpRequest) {
+        String token = AuthController.extractToken(httpRequest.getHeader("Authorization"));
+        String payload = token == null ? null : jwtUtil.verify(token);
+        if (payload != null) {
+            Long customerId = jwtUtil.getCustomerId(payload);
+            if (customerId != null) {
+                request.setCustomerId(customerId);
+            }
+        }
         return Result.success(orderService.createOrder(request));
     }
 

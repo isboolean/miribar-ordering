@@ -105,6 +105,42 @@ cd server
 mvn spring-boot:run
 ```
 
+### 顾客登录（H5）
+
+顾客端可选登录，登录页支持两种方式切换（均需图形验证码）：
+- **验证码登录**：手机号 + 图形验证码 + 短信验证码，未注册手机号自动注册
+- **密码登录**：手机号 + 密码 + 图形验证码（密码需先通过验证码登录后调用 `POST /api/auth/customer/password/set` 设置）
+- 登录后下单自动关联顾客（`t_order.customer_id`），未登录扫码点餐不受影响
+- 开发模式（默认，`sms.dev-mode=true`）：短信验证码固定为 `1234`，且发送接口直接返回验证码便于联调；生产环境在 `application.yml` 配置 `sms.dev-mode: false` 并对接短信服务商
+
+### 员工登录（管理端/看板）
+
+访问 `/admin` 或 `/kitchen` 需员工登录，登录页支持两种方式切换（均需图形验证码）：
+
+**方式一：账号密码**
+
+| 账号 | 密码 | 角色 | 绑定手机号 |
+|------|------|------|------|
+| admin | admin123 | 平台管理员 | 13800000001 |
+| manager01 | 123456 | 店长 | 13800000004 |
+| bar01 | 123456 | 吧台员工 | 13800000002 |
+| kitchen01 | 123456 | 后厨员工 | 13800000003 |
+
+**方式二：手机号短信验证码**：图形验证码通过后发送短信（开发模式验证码 `1234`），验证码登录。
+
+- 顾客端（扫码点餐）无需登录
+- `/api/admin/**` 仅店长/平台管理员可访问；吧台/后厨相关操作接口需员工登录
+- 图形验证码接口：`GET /api/auth/captcha`，一次性使用，5 分钟有效
+- 种子数据密码为加盐 SHA-256 哈希；接口兼容历史明文密码，登录成功后建议更新为哈希格式
+
+**存量数据库迁移（已建库执行）：**
+```sql
+ALTER TABLE t_staff ADD COLUMN phone VARCHAR(20) NULL COMMENT '手机号(短信登录)';
+ALTER TABLE t_staff ADD INDEX idx_phone (phone);
+ALTER TABLE t_customer ADD COLUMN password VARCHAR(100) NULL COMMENT '密码(加盐SHA-256)';
+UPDATE t_staff SET phone = CONCAT('1380000000', id) WHERE phone IS NULL;
+```
+
 ## 数据库表结构
 
 | 表名 | 说明 |

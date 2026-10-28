@@ -7,6 +7,7 @@ import java.util.List;
 public class OrderRequest {
     private Long storeId;
     private Long tableId;
+    private Long customerId;
     private String remark;
     private List<OrderItemRequest> items;
 }
