@@ -1,0 +1,57 @@
+const BASE = '/api'
+
+async function request(url, options = {}) {
+  const res = await fetch(BASE + url, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+    ...options
+  })
+  const data = await res.json()
+  if (data.code !== 200) {
+    throw new Error(data.message || '请求失败')
+  }
+  return data.data
+}
+
+// ========== 门店 ==========
+export const getStore = (id) => request(`/store/${id}`)
+
+// ========== 菜单 ==========
+export const getMenu = (storeId) => request(`/menu/store/${storeId}`)
+export const getCategories = (storeId) => request(`/menu/store/${storeId}/categories`)
+export const getProductsByCategory = (categoryId) => request(`/menu/category/${categoryId}`)
+export const getProductDetail = (productId) => request(`/menu/product/${productId}`)
+
+// ========== 桌台 ==========
+export const getTables = (storeId) => request(`/table/store/${storeId}`)
+export const getTableByQrToken = (token) => request(`/table/qr/${token}`)
+export const getTableById = (id) => request(`/table/${id}`)
+export const addTable = (data) => request('/table', { method: 'POST', body: JSON.stringify(data) })
+export const updateTable = (id, data) => request(`/table/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+export const deleteTable = (id) => request(`/table/${id}`, { method: 'DELETE' })
+export const openTable = (id) => request(`/table/${id}/open`, { method: 'POST' })
+export const clearTable = (id) => request(`/table/${id}/clear`, { method: 'POST' })
+export const getTableBill = (id) => request(`/table/${id}/bill`)
+export const checkoutTable = (id, params = '') => request(`/table/${id}/checkout${params ? '?' + params : ''}`, { method: 'POST' })
+
+// ========== 订单 ==========
+export const createOrder = (data) => request('/order', { method: 'POST', body: JSON.stringify(data) })
+export const getOrderDetail = (id) => request(`/order/${id}`)
+export const getTableOrders = (tableId) => request(`/order/table/${tableId}`)
+export const getStoreActiveOrders = (storeId) => request(`/order/store/${storeId}/active`)
+export const getStoreOrdersByStatus = (storeId, status) => request(`/order/store/${storeId}/status/${status}`)
+export const acceptOrder = (id) => request(`/order/${id}/accept`, { method: 'POST' })
+export const completeOrder = (id) => request(`/order/${id}/complete`, { method: 'POST' })
+export const rejectOrder = (id, reason) => request(`/order/${id}/reject?reason=${encodeURIComponent(reason)}`, { method: 'POST' })
+export const cancelOrder = (id) => request(`/order/${id}/cancel`, { method: 'POST' })
+
+// ========== 商品管理 ==========
+export const adminGetCategories = (storeId) => request(`/admin/product/category/store/${storeId}`)
+export const adminAddCategory = (data) => request('/admin/product/category', { method: 'POST', body: JSON.stringify(data) })
+export const adminUpdateCategory = (id, data) => request(`/admin/product/category/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+export const adminDeleteCategory = (id) => request(`/admin/product/category/${id}`, { method: 'DELETE' })
+export const adminGetProducts = (storeId) => request(`/admin/product/store/${storeId}`)
+export const adminGetProduct = (id) => request(`/admin/product/${id}`)
+export const adminAddProduct = (data) => request('/admin/product', { method: 'POST', body: JSON.stringify(data) })
+export const adminUpdateProduct = (id, data) => request(`/admin/product/${id}`, { method: 'PUT', body: JSON.stringify(data) })
+export const adminUpdateProductStatus = (id, status) => request(`/admin/product/${id}/status?status=${status}`, { method: 'POST' })
+export const adminDeleteProduct = (id) => request(`/admin/product/${id}`, { method: 'DELETE' })

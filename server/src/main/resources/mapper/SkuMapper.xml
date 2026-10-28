@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.miribar.ordering.mapper.SkuMapper">
+
+    <select id="selectByProductId" resultType="Sku">
+        SELECT * FROM t_sku WHERE product_id = #{productId}
+    </select>
+
+    <select id="selectById" resultType="Sku">
+        SELECT * FROM t_sku WHERE id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_sku (product_id, sku_name, price, stock, sold_out)
+        VALUES (#{productId}, #{skuName}, #{price}, #{stock}, #{soldOut})
+    </insert>
+
+    <update id="update">
+        UPDATE t_sku
+        <set>
+            <if test="skuName != null">sku_name = #{skuName},</if>
+            <if test="price != null">price = #{price},</if>
+            <if test="stock != null">stock = #{stock},</if>
+            <if test="soldOut != null">sold_out = #{soldOut},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateStock">
+        UPDATE t_sku SET stock = #{stock} WHERE id = #{id}
+    </update>
+
+    <update id="updateSoldOut">
+        UPDATE t_sku SET sold_out = #{soldOut} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM t_sku WHERE id = #{id}
+    </delete>
+
+</mapper>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.miribar.ordering.mapper.OrderItemMapper">
+
+    <select id="selectByOrderId" resultType="OrderItem">
+        SELECT * FROM t_order_item WHERE order_id = #{orderId}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_order_item (order_id, sku_id, product_name, sku_name, quantity, unit_price, subtotal, remark, item_type)
+        VALUES (#{orderId}, #{skuId}, #{productName}, #{skuName}, #{quantity}, #{unitPrice}, #{subtotal}, #{remark}, #{itemType})
+    </insert>
+
+    <insert id="batchInsert">
+        INSERT INTO t_order_item (order_id, sku_id, product_name, sku_name, quantity, unit_price, subtotal, remark, item_type)
+        VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.orderId}, #{item.skuId}, #{item.productName}, #{item.skuName}, #{item.quantity}, #{item.unitPrice}, #{item.subtotal}, #{item.remark}, #{item.itemType})
+        </foreach>
+    </insert>
+
+</mapper>
