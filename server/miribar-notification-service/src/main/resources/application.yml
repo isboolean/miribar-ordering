@@ -1,0 +1,39 @@
+server:
+  port: 9005
+
+spring:
+  application:
+    name: miribar-notification-service
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+      config:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        file-extension: yml
+    sentinel:
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD:localhost:8858}
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/miribar_notification}
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+    consumer:
+      group-id: notification-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.miribar.common.dto
+
+# 业务配置
+app:
+  kafka:
+    topics:
+      order-events: order-events
+      tracking-events: tracking-events
+
+logging:
+  level:
+    com.miribar.notification: info

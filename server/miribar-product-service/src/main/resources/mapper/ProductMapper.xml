@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.miribar.product.mapper.ProductMapper">
+    <select id="selectByStoreId" resultType="com.miribar.common.entity.Product">
+        SELECT * FROM t_product WHERE store_id = #{storeId} ORDER BY sort_order
+    </select>
+    <select id="selectByCategoryId" resultType="com.miribar.common.entity.Product">
+        SELECT * FROM t_product WHERE category_id = #{categoryId} AND status = 1 ORDER BY sort_order
+    </select>
+    <select id="selectById" resultType="com.miribar.common.entity.Product">SELECT * FROM t_product WHERE id = #{id}</select>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_product (store_id, category_id, name, description, image_url, product_type, tags, contains_alcohol, status, sort_order)
+        VALUES (#{storeId}, #{categoryId}, #{name}, #{description}, #{imageUrl}, #{productType}, #{tags}, #{containsAlcohol}, #{status}, #{sortOrder})
+    </insert>
+    <update id="update">
+        UPDATE t_product <set>
+            <if test="categoryId != null">category_id = #{categoryId},</if><if test="name != null">name = #{name},</if>
+            <if test="description != null">description = #{description},</if><if test="imageUrl != null">image_url = #{imageUrl},</if>
+            <if test="productType != null">product_type = #{productType},</if><if test="tags != null">tags = #{tags},</if>
+            <if test="containsAlcohol != null">contains_alcohol = #{containsAlcohol},</if><if test="status != null">status = #{status},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+        </set> WHERE id = #{id}
+    </update>
+    <update id="updateStatus">UPDATE t_product SET status = #{status} WHERE id = #{id}</update>
+    <delete id="deleteById">DELETE FROM t_product WHERE id = #{id}</delete>
+</mapper>

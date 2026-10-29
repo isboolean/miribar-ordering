@@ -1,0 +1,159 @@
+# =============================================
+# MiriBar 微服务 - 中间件一键启动
+# 包含: MySQL, Redis, Nacos, Kafka, Elasticsearch, MongoDB
+# 启动: docker-compose up -d
+# =============================================
+version: '3.8'
+
+services:
+  # ---------- MySQL ----------
+  mysql:
+    image: mysql:8.0
+    container_name: miribar-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql:/docker-entrypoint-initdb.d
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - miribar-net
+
+  # ---------- Redis ----------
+  redis:
+    image: redis:7-alpine
+    container_name: miribar-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - miribar-net
+
+  # ---------- Nacos (单机模式, 内嵌 Derby 存储, 不依赖 mysql 容器) ----------
+  nacos:
+    image: nacos/nacos-server:v2.3.2
+    container_name: miribar-nacos
+    environment:
+      MODE: standalone
+      NACOS_AUTH_ENABLE: "false"
+      JVM_XMS: 256m
+      JVM_XMX: 256m
+    ports:
+      - "8848:8848"
+      - "9848:9848"
+    volumes:
+      - nacos_logs:/home/nacos/logs
+    networks:
+      - miribar-net
+
+  # ---------- Kafka + Zookeeper ----------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: miribar-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+      - zookeeper_log:/var/lib/zookeeper/log
+    networks:
+      - miribar-net
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: miribar-kafka
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # KAFKA_ADVERTISED_HOST: 在虚拟机上启动前设置为虚拟机 IP（如 192.168.1.100），供外部机器访问
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${KAFKA_ADVERTISED_HOST:-localhost}:9092,INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - miribar-net
+
+  # ---------- Elasticsearch ----------
+  elasticsearch:
+    image: elasticsearch:8.13.4
+    container_name: miribar-es
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - miribar-net
+
+  # ---------- MongoDB ----------
+  mongodb:
+    image: mongo:7
+    container_name: miribar-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - miribar-net
+
+  # ---------- Sentinel Dashboard ----------
+  sentinel:
+    image: bladex/sentinel-dashboard:1.8.7
+    container_name: miribar-sentinel
+    ports:
+      - "8858:8858"
+    environment:
+      JAVA_OPT: "-Xms128m -Xmx256m"
+    networks:
+      - miribar-net
+
+volumes:
+  mysql_data:
+  redis_data:
+  nacos_logs:
+  zookeeper_data:
+  zookeeper_log:
+  kafka_data:
+  es_data:
+  mongodb_data:
+
+networks:
+  miribar-net:
+    driver: bridge

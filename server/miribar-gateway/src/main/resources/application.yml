@@ -1,0 +1,66 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: miribar-gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:}
+      config:
+        server-addr: ${NACOS_ADDR:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:}
+        file-extension: yml
+    gateway:
+      discovery:
+        locator:
+          enabled: false
+      routes:
+        # Auth Service
+        - id: auth-service
+          uri: lb://miribar-auth-service
+          predicates:
+            - Path=/api/auth/**
+        # Store Service
+        - id: store-service
+          uri: lb://miribar-store-service
+          predicates:
+            - Path=/api/store/**,/api/table/**
+        # Product Service - Menu
+        - id: product-menu
+          uri: lb://miribar-product-service
+          predicates:
+            - Path=/api/menu/**
+        # Product Service - Admin
+        - id: product-admin
+          uri: lb://miribar-product-service
+          predicates:
+            - Path=/api/admin/product/**
+        # Order Service
+        - id: order-service
+          uri: lb://miribar-order-service
+          predicates:
+            - Path=/api/order/**
+        # WebSocket - Kitchen/Bar
+        - id: ws-service
+          uri: lb:ws://miribar-order-service
+          predicates:
+            - Path=/ws/**
+    sentinel:
+      transport:
+        dashboard: ${SENTINEL_DASHBOARD:localhost:8858}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+jwt:
+  secret: ${JWT_SECRET:miribar-ordering-default-secret-change-me-in-production-2026}
+
+logging:
+  level:
+    com.miribar.gateway: info

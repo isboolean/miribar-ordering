@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.miribar.product.mapper.CategoryMapper">
+    <select id="selectByStoreId" resultType="com.miribar.common.entity.Category">
+        SELECT * FROM t_category WHERE store_id = #{storeId} AND status = 1 ORDER BY sort_order
+    </select>
+    <select id="selectById" resultType="com.miribar.common.entity.Category">SELECT * FROM t_category WHERE id = #{id}</select>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_category (store_id, name, icon, sort_order, status) VALUES (#{storeId}, #{name}, #{icon}, #{sortOrder}, #{status})
+    </insert>
+    <update id="update">
+        UPDATE t_category <set>
+            <if test="name != null">name = #{name},</if><if test="icon != null">icon = #{icon},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if><if test="status != null">status = #{status},</if>
+        </set> WHERE id = #{id}
+    </update>
+    <delete id="deleteById">DELETE FROM t_category WHERE id = #{id}</delete>
+</mapper>
