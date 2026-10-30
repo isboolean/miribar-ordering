@@ -4,11 +4,11 @@
       <div v-if="visible" class="cart-popup" @click.self="$emit('close')">
         <div class="popup-inner">
           <div class="popup-header">
-            <h3>🛒 购物车</h3>
+            <h3>购物车</h3>
             <button class="close-btn" @click="$emit('close')">✕</button>
           </div>
           <div v-if="cart.items.length === 0" class="empty-state">
-            <div class="icon">🛒</div>
+            <div class="icon">·</div>
             <div>购物车为空</div>
           </div>
           <div v-else class="popup-body">
@@ -57,43 +57,47 @@ const cart = useCartStore()
 .cart-bar {
   position: fixed; bottom: 0; left: 0; right: 0;
   background: var(--card-bg); border-top: 1px solid var(--border);
-  padding: 12px 20px; display: flex; align-items: center; z-index: 200;
+  padding: 10px 20px; display: flex; align-items: center; z-index: 200;
+  box-shadow: 0 -1px 8px rgba(16,24,40,.06);
 }
 .cart-icon {
-  position: relative; width: 50px; height: 50px; border-radius: 50%;
+  position: relative; width: 46px; height: 46px; border-radius: 50%;
   background: var(--primary); display: flex; align-items: center; justify-content: center;
-  font-size: 24px; cursor: pointer;
+  font-size: 22px; cursor: pointer;
 }
 .cart-badge {
   position: absolute; top: -4px; right: -4px;
   background: var(--danger); color: #fff; font-size: 11px;
-  min-width: 20px; height: 20px; border-radius: 10px;
+  min-width: 20px; height: 20px; border-radius: 999px;
   display: flex; align-items: center; justify-content: center; font-weight: 600;
 }
 .cart-total { flex: 1; margin-left: 16px; }
-.cart-total .amount { font-size: 20px; font-weight: 700; color: var(--accent); }
+.cart-total .amount { font-size: 19px; font-weight: 700; }
 .cart-total .count { font-size: 12px; color: var(--text-muted); }
 .submit-btn {
-  padding: 12px 28px; border-radius: 24px; border: none;
-  background: var(--primary); color: #fff; font-size: 16px; font-weight: 600;
+  padding: 12px 28px; border-radius: 999px; border: none;
+  background: var(--primary); color: #fff; font-size: 15px; font-weight: 600;
+  transition: background .15s;
 }
-.submit-btn:disabled { background: #555; cursor: not-allowed; }
+.submit-btn:hover { background: var(--primary-dark); }
+.submit-btn:disabled { background: var(--surface-2); color: var(--text-muted); cursor: not-allowed; }
 
 /* Popup */
 .cart-popup {
   position: fixed; inset: 0; z-index: 300;
-  background: rgba(0,0,0,.4);
+  background: rgba(16,24,40,.4);
 }
 .popup-inner {
   position: absolute; bottom: 74px; left: 0; right: 0;
-  background: var(--card-bg); border-radius: 16px 16px 0 0;
+  background: var(--card-bg); border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   max-height: 50vh; display: flex; flex-direction: column;
+  box-shadow: var(--shadow-md);
 }
 .popup-header {
   display: flex; justify-content: space-between; align-items: center;
   padding: 16px 20px; border-bottom: 1px solid var(--border);
 }
-.popup-header h3 { font-size: 16px; }
+.popup-header h3 { font-size: 16px; font-weight: 600; }
 .close-btn {
   background: none; border: none; color: var(--text-muted);
   font-size: 18px; cursor: pointer; padding: 4px;
@@ -107,7 +111,7 @@ const cart = useCartStore()
 .item-info { flex: 1; }
 .item-name { font-size: 14px; font-weight: 500; }
 .item-sku { font-size: 12px; color: var(--text-muted); }
-.item-price { font-size: 14px; color: var(--accent); font-weight: 600; margin-top: 2px; }
+.item-price { font-size: 14px; color: var(--text); font-weight: 600; margin-top: 2px; }
 .qty-control { display: flex; align-items: center; gap: 10px; }
 .qty-btn {
   width: 28px; height: 28px; border-radius: 50%;
@@ -115,7 +119,7 @@ const cart = useCartStore()
   color: var(--text); font-size: 16px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
-.qty-btn:active { background: var(--primary); }
+.qty-btn:active { background: var(--primary-soft); border-color: var(--primary); }
 .qty-num { font-size: 15px; font-weight: 600; min-width: 20px; text-align: center; }
 
 /* Transition */

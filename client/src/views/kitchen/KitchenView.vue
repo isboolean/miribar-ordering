@@ -30,7 +30,7 @@
     <div class="board">
       <!-- Pending -->
       <div class="column col-pending">
-        <div class="column-header"><span>⏳ 待接单</span><span class="column-count">{{ pending.length }}</span></div>
+        <div class="column-header"><span>待接单</span><span class="column-count">{{ pending.length }}</span></div>
         <div class="column-body">
           <div v-if="pending.length === 0" class="empty-state"><div class="icon">📋</div>暂无待接单</div>
           <div v-for="o in pending" :key="o.order.id" class="order-card" :class="{ urgent: isUrgent(o) }">
@@ -50,7 +50,7 @@
       </div>
       <!-- Done -->
       <div class="column col-done">
-        <div class="column-header"><span>✅ 已完成</span><span class="column-count">{{ done.length }}</span></div>
+        <div class="column-header"><span>已完成</span><span class="column-count">{{ done.length }}</span></div>
         <div class="column-body">
           <div v-if="done.length === 0" class="empty-state"><div class="icon">🎉</div>暂无已完成</div>
           <div v-for="o in done" :key="o.order.id" class="order-card">
@@ -237,11 +237,11 @@ const OrderCard = defineComponent({
         h('div', { class: 'card-amount' }, `¥${o._amount.toFixed(2)}`),
         h('div', { class: 'card-actions' },
           order.status === 0
-            ? [h('button', { class: 'action-btn btn-accept', onClick: () => emit('accept', order.id) }, '✅ 接单'),
-               h('button', { class: 'action-btn btn-reject', onClick: () => emit('reject', order.id) }, '❌ 拒单')]
+            ? [h('button', { class: 'action-btn btn-accept', onClick: () => emit('accept', order.id) }, '接单'),
+               h('button', { class: 'action-btn btn-reject', onClick: () => emit('reject', order.id) }, '拒单')]
             : order.status === 1
-            ? [h('button', { class: 'action-btn btn-complete', style: 'flex:1', onClick: () => emit('complete', order.id) }, '✅ 完成制作')]
-            : [h('div', { class: 'done-text' }, '✅ 制作完成')]
+            ? [h('button', { class: 'action-btn btn-complete', style: 'flex:1', onClick: () => emit('complete', order.id) }, '完成制作')]
+            : [h('div', { class: 'done-text' }, '制作完成')]
         )
       ])
     }
@@ -253,11 +253,12 @@ const OrderCard = defineComponent({
 .kitchen-page { min-height: 100vh; display: flex; flex-direction: column; }
 
 .header {
-  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
   padding: 12px 24px; display: flex; align-items: center; justify-content: space-between;
 }
-.header h1 { font-size: 20px; font-weight: 600; }
-.store-info { font-size: 13px; opacity: .85; }
+.header h1 { font-size: 18px; font-weight: 600; }
+.store-info { font-size: 13px; color: var(--text-muted); }
 .header-right { display: flex; align-items: center; gap: 16px; }
 .mode-toggle { display: flex; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
 .mode-btn { padding: 6px 16px; font-size: 13px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; }
@@ -275,24 +276,24 @@ const OrderCard = defineComponent({
 .stat-done .stat-num { color: var(--success); }
 
 .board { display: flex; gap: 16px; padding: 16px 24px; flex: 1; }
-.column { flex: 1; background: rgba(255,255,255,.02); border-radius: 12px; border: 1px solid var(--border); display: flex; flex-direction: column; min-width: 300px; }
-.column-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-weight: 600; font-size: 15px; }
-.column-count { background: rgba(255,255,255,.1); padding: 2px 10px; border-radius: 12px; font-size: 13px; }
+.column { flex: 1; background: var(--surface-2); border-radius: var(--radius); border: 1px solid var(--border); display: flex; flex-direction: column; min-width: 300px; }
+.column-header { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-weight: 600; font-size: 14px; }
+.column-count { background: var(--card-bg); color: var(--text-muted); padding: 1px 10px; border-radius: 999px; font-size: 13px; font-weight: 500; }
 .col-pending .column-header { border-top: 3px solid var(--accent); }
 .col-cooking .column-header { border-top: 3px solid var(--info); }
 .col-done .column-header { border-top: 3px solid var(--success); }
 .column-body { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
 
-.order-card { background: var(--card-bg); border-radius: 10px; padding: 14px; border: 1px solid var(--border); transition: all .2s; }
+.order-card { background: var(--card-bg); border-radius: var(--radius-sm); padding: 14px; border: 1px solid var(--border); transition: border-color .2s; }
 .order-card:hover { border-color: var(--primary); }
 .order-card.urgent { border-color: var(--danger); animation: pulse 2s infinite; }
-@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(231,76,60,.3); } 50% { box-shadow: 0 0 12px 2px rgba(231,76,60,.3); } }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,.25); } 50% { box-shadow: 0 0 10px 2px rgba(239,68,68,.25); } }
 
 .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-.card-table { font-size: 18px; font-weight: 700; }
+.card-table { font-size: 17px; font-weight: 700; }
 .card-time { font-size: 11px; color: var(--text-muted); }
-.card-source { font-size: 10px; padding: 2px 8px; border-radius: 4px; background: rgba(255,255,255,.08); color: var(--text-muted); margin-left: 8px; }
-.card-source.add-order { background: rgba(46,204,113,.15); color: var(--success); }
+.card-source { font-size: 10px; padding: 2px 8px; border-radius: 4px; background: var(--surface-2); color: var(--text-muted); margin-left: 8px; }
+.card-source.add-order { background: rgba(22,163,74,.1); color: var(--success); }
 
 .card-items { margin-bottom: 10px; }
 .card-item { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; }
@@ -300,8 +301,8 @@ const OrderCard = defineComponent({
 .card-item .item-qty { width: 40px; text-align: center; color: var(--text-muted); }
 .card-item .item-remark { font-size: 11px; color: var(--accent); max-width: 100px; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.card-remark { background: rgba(243,156,18,.1); border: 1px solid rgba(243,156,18,.3); border-radius: 6px; padding: 6px 10px; font-size: 12px; color: var(--accent); margin-bottom: 10px; }
-.card-amount { text-align: right; font-size: 13px; color: var(--accent); margin-bottom: 10px; font-weight: 600; }
+.card-remark { background: rgba(245,158,11,.08); border-radius: 6px; padding: 6px 10px; font-size: 12px; color: var(--warning); margin-bottom: 10px; }
+.card-amount { text-align: right; font-size: 13px; color: var(--text); margin-bottom: 10px; font-weight: 600; }
 
 .card-actions { display: flex; gap: 8px; }
 .action-btn { flex: 1; padding: 8px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; }
@@ -311,13 +312,13 @@ const OrderCard = defineComponent({
 .btn-reject { background: var(--danger); color: #fff; }
 .done-text { text-align: center; width: 100%; color: var(--success); font-size: 13px; padding: 4px; }
 
-.notification { position: fixed; top: 20px; right: 20px; background: var(--primary); color: #fff; padding: 14px 24px; border-radius: 10px; font-size: 14px; font-weight: 600; z-index: 999; box-shadow: 0 4px 20px rgba(108,52,131,.4); }
+.notification { position: fixed; top: 20px; right: 20px; background: var(--card-bg); color: var(--text); padding: 14px 24px; border-radius: var(--radius); font-size: 14px; font-weight: 600; z-index: 999; box-shadow: var(--shadow-md); border: 1px solid var(--border); }
 .slide-right-enter-active, .slide-right-leave-active { transition: all .3s ease; }
 .slide-right-enter-from, .slide-right-leave-to { opacity: 0; transform: translateX(100%); }
 
 .reject-reasons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .reason-tag { padding: 6px 12px; border-radius: 16px; border: 1px solid var(--border); background: transparent; color: var(--text); font-size: 12px; cursor: pointer; }
-.reason-tag.selected { border-color: var(--danger); background: rgba(231,76,60,.15); color: var(--danger); }
+.reason-tag.selected { border-color: var(--danger); background: rgba(239,68,68,.08); color: var(--danger); }
 
 .logout-btn { padding: 6px 14px; border-radius: 8px; border: 1px solid var(--border); background: transparent; color: var(--text); font-size: 12px; cursor: pointer; }
 .logout-btn:hover { border-color: var(--danger); color: var(--danger); }

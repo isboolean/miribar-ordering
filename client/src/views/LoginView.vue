@@ -186,24 +186,25 @@ async function handleSmsForm() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #1e1b2e 0%, #2d1f3d 50%, #1a2332 100%);
+  background: var(--bg);
   padding: 20px;
 }
 .login-card {
   width: 100%;
   max-width: 400px;
-  background: #fff;
-  border-radius: 16px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
   padding: 36px 32px 26px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
 }
 .brand { text-align: center; margin-bottom: 22px; }
-.brand-icon { font-size: 46px; }
-.brand h1 { margin: 8px 0 4px; font-size: 26px; color: #1f2937; letter-spacing: 2px; }
-.brand p { margin: 0; font-size: 13px; color: #6b7280; }
+.brand-icon { font-size: 40px; }
+.brand h1 { margin: 8px 0 4px; font-size: 22px; color: var(--text); letter-spacing: 2px; font-weight: 600; }
+.brand p { margin: 0; font-size: 13px; color: var(--text-muted); }
 .tab-switch {
   display: flex;
-  background: #f3f4f6;
+  background: var(--surface-2);
   border-radius: 10px;
   padding: 4px;
   margin-bottom: 22px;
@@ -215,27 +216,27 @@ async function handleSmsForm() {
   border-radius: 8px;
   background: transparent;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-muted);
   cursor: pointer;
   transition: all .2s;
 }
-.tab-switch button.active { background: #8b5cf6; color: #fff; font-weight: 600; }
+.tab-switch button.active { background: var(--primary); color: #fff; font-weight: 600; }
 .field { margin-bottom: 16px; }
-.field label { display: block; font-size: 13px; color: #374151; margin-bottom: 6px; }
+.field label { display: block; font-size: 13px; color: var(--text); margin-bottom: 6px; }
 .field input {
   width: 100%;
   box-sizing: border-box;
   padding: 11px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 15px;
   outline: none;
   transition: border-color .2s;
 }
-.field input:focus { border-color: #8b5cf6; }
+.field input:focus { border-color: var(--primary); }
 .error {
-  background: #fef2f2;
-  color: #dc2626;
+  background: rgba(239,68,68,.08);
+  color: var(--danger);
   font-size: 13px;
   padding: 8px 12px;
   border-radius: 8px;
@@ -246,31 +247,31 @@ async function handleSmsForm() {
   padding: 12px;
   border: none;
   border-radius: 8px;
-  background: #8b5cf6;
+  background: var(--primary);
   color: #fff;
   font-size: 15px;
   font-weight: 600;
   cursor: pointer;
   transition: background .2s;
 }
-.login-btn:hover { background: #7c3aed; }
+.login-btn:hover { background: var(--primary-dark); }
 .login-btn:disabled { opacity: .6; cursor: not-allowed; }
 .resend-btn {
   display: block;
   margin: -6px auto 14px;
   border: none;
   background: transparent;
-  color: #8b5cf6;
+  color: var(--primary);
   font-size: 13px;
   cursor: pointer;
 }
-.resend-btn:disabled { color: #9ca3af; cursor: not-allowed; }
+.resend-btn:disabled { color: var(--text-muted); cursor: not-allowed; }
 .tips {
   margin-top: 22px;
   padding-top: 16px;
-  border-top: 1px dashed #e5e7eb;
+  border-top: 1px dashed var(--border);
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--text-muted);
   line-height: 1.8;
 }
 .tips p { margin: 0; }

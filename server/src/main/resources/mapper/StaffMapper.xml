@@ -13,15 +13,34 @@
     <select id="selectByPhone" resultType="Staff">
         SELECT * FROM t_staff WHERE phone = #{phone} LIMIT 1
     </select>
+    
+    <select id="selectAll" resultType="Staff">
+        SELECT * FROM t_staff ORDER BY id
+    </select>
+    
+    <select id="selectByStoreId" resultType="Staff">
+        SELECT * FROM t_staff WHERE store_id = #{storeId} ORDER BY id
+    </select>
+    
+    <select id="selectByKeyword" resultType="Staff">
+        SELECT * FROM t_staff 
+        WHERE username LIKE CONCAT('%', #{keyword}, '%') 
+           OR real_name LIKE CONCAT('%', #{keyword}, '%')
+           OR phone LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY id
+    </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO t_staff (store_id, username, password, phone, real_name, role, status)
-        VALUES (#{storeId}, #{username}, #{password}, #{phone}, #{realName}, #{role}, #{status})
+        INSERT INTO t_staff (store_id, org_id, username, password, phone, real_name, role, status)
+        VALUES (#{storeId}, #{orgId}, #{username}, #{password}, #{phone}, #{realName}, #{role}, #{status})
     </insert>
 
     <update id="update">
         UPDATE t_staff
         <set>
+            <if test="storeId != null">store_id = #{storeId},</if>
+            <if test="orgId != null">org_id = #{orgId},</if>
+            <if test="username != null">username = #{username},</if>
             <if test="password != null">password = #{password},</if>
             <if test="phone != null">phone = #{phone},</if>
             <if test="realName != null">real_name = #{realName},</if>
@@ -29,6 +48,14 @@
             <if test="status != null">status = #{status},</if>
         </set>
         WHERE id = #{id}
+    </update>
+    
+    <delete id="deleteById">
+        DELETE FROM t_staff WHERE id = #{id}
+    </delete>
+    
+    <update id="updatePassword">
+        UPDATE t_staff SET password = #{password} WHERE id = #{id}
     </update>
 
 </mapper>

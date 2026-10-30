@@ -10,7 +10,7 @@ import java.util.Base64;
 
 /**
  * 轻量 JWT 工具（HS256，基于 JDK 自带 HMAC，无第三方依赖）
- * Payload: { staffId, username, realName, role, storeId, exp }
+ * Payload: { staffId, username, realName, role, storeId, permissions[], exp }
  */
 @Component
 public class JwtUtil {
@@ -21,15 +21,30 @@ public class JwtUtil {
     @Value("${jwt.expire-hours:24}")
     private long expireHours;
 
-    public String generateToken(Long staffId, String username, String realName, Integer role, Long storeId) {
+    public String generateToken(Long staffId, String username, String realName, Integer role, Long storeId, java.util.List<String> permissions) {
         long exp = System.currentTimeMillis() / 1000 + expireHours * 3600;
+        StringBuilder permBuilder = new StringBuilder("[");
+        if (permissions != null && !permissions.isEmpty()) {
+            for (int i = 0; i < permissions.size(); i++) {
+                if (i > 0) permBuilder.append(",");
+                permBuilder.append("\"").append(escape(permissions.get(i))).append("\"");
+            }
+        }
+        permBuilder.append("]");
+        
         String payload = "{\"staffId\":" + staffId
                 + ",\"username\":\"" + escape(username) + "\""
                 + (realName == null ? "" : ",\"realName\":\"" + escape(realName) + "\"")
                 + ",\"role\":" + role
                 + ",\"storeId\":" + storeId
+                + ",\"permissions\":" + permBuilder.toString()
                 + ",\"exp\":" + exp + "}";
         return sign(payload);
+    }
+    
+    // 向后兼容的旧方法
+    public String generateToken(Long staffId, String username, String realName, Integer role, Long storeId) {
+        return generateToken(staffId, username, realName, role, storeId, null);
     }
 
     /** 顾客 token：payload 含 customerId，与员工 token 区分 */
@@ -83,6 +98,44 @@ public class JwtUtil {
 
     public Long getStoreId(String payload) {
         return extractLong(payload, "storeId");
+    }
+    
+    /**
+     * 获取用户权限列表
+     */
+    public java.util.List<String> getPermissions(String payload) {
+        java.util.List<String> permissions = new java.util.ArrayList<>();
+        if (payload == null) return permissions;
+        
+        int start = payload.indexOf("\"permissions\":[");
+        if (start < 0) return permissions;
+        
+        start = payload.indexOf("[", start) + 1;
+        int end = payload.indexOf("]", start);
+        if (end < 0) return permissions;
+        
+        String permStr = payload.substring(start, end).trim();
+        if (permStr.isEmpty()) return permissions;
+        
+        // 简单解析 JSON 数组
+        String[] parts = permStr.split(",");
+        for (String part : parts) {
+            String perm = part.trim();
+            if (perm.startsWith("\"") && perm.endsWith("\"")) {
+                perm = perm.substring(1, perm.length() - 1);
+                perm = perm.replace("\\\"", "\"").replace("\\\\", "\\");
+                permissions.add(perm);
+            }
+        }
+        return permissions;
+    }
+    
+    /**
+     * 检查用户是否有指定权限
+     */
+    public boolean hasPermission(String payload, String permission) {
+        java.util.List<String> permissions = getPermissions(payload);
+        return permissions.contains(permission);
     }
 
     private static Long extractLong(String json, String key) {

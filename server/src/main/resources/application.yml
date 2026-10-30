@@ -5,7 +5,7 @@ spring:
   application:
     name: miribar-ordering
   datasource:
-    url: jdbc:mysql://localhost:3306/miribar_ordering?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/miribar_ordering_single?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: Admin
     password: 199811
     driver-class-name: com.mysql.cj.jdbc.Driver

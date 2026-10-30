@@ -9,14 +9,21 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class WebConfig implements WebMvcConfigurer {
 
     private final AuthInterceptor authInterceptor;
+    private final PermissionInterceptor permissionInterceptor;
 
-    public WebConfig(AuthInterceptor authInterceptor) {
+    public WebConfig(AuthInterceptor authInterceptor, PermissionInterceptor permissionInterceptor) {
         this.authInterceptor = authInterceptor;
+        this.permissionInterceptor = permissionInterceptor;
     }
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // 先进行认证检查
         registry.addInterceptor(authInterceptor)
+                .addPathPatterns("/api/**");
+        
+        // 再进行权限检查
+        registry.addInterceptor(permissionInterceptor)
                 .addPathPatterns("/api/**");
     }
 

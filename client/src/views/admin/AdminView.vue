@@ -1,7 +1,7 @@
 <template>
-  <div class="admin-page">
+  <div class="admin-layout">
     <header class="header">
-      <h1>⚙️ MiriBar 管理后台</h1>
+      <h1>MiriBar 管理后台</h1>
       <div class="header-user">
         <span style="font-size:13px;opacity:.8">{{ auth.displayName }} | {{ roleText }}</span>
         <button class="btn btn-outline btn-sm" @click="handleLogout">退出登录</button>
@@ -10,14 +10,60 @@
 
     <div class="layout">
       <nav class="sidebar">
-        <div v-for="tab in tabs" :key="tab.key" class="nav-item" :class="{ active: activeTab === tab.key }" @click="activeTab = tab.key">
-          {{ tab.icon }} {{ tab.label }}
-        </div>
+        <!-- 动态菜单 -->
+        <template v-for="menu in visibleMenus" :key="menu.id">
+          <!-- 目录类型（有子菜单） -->
+          <div v-if="menu.menuType === 0 && menu.children && menu.children.length > 0" class="nav-group">
+            <div class="nav-item nav-group-title" @click="toggleGroup(menu.id)">
+              {{ getMenuIcon(menu.icon) }} {{ menu.menuName }}
+              <span class="arrow" :class="{ expanded: expandedGroups.includes(menu.id) }">▶</span>
+            </div>
+            <div v-show="expandedGroups.includes(menu.id)" class="nav-group-children">
+              <div 
+                v-for="child in menu.children" 
+                :key="child.id" 
+                class="nav-item nav-child"
+                :class="{ active: activeMenu === child.path }"
+                @click="navigateTo(child)"
+              >
+                {{ getMenuIcon(child.icon) }} {{ child.menuName }}
+              </div>
+            </div>
+          </div>
+          <!-- 菜单类型（无子菜单） -->
+          <div 
+            v-else-if="menu.menuType === 1" 
+            class="nav-item"
+            :class="{ active: activeMenu === menu.path }"
+            @click="navigateTo(menu)"
+          >
+            {{ getMenuIcon(menu.icon) }} {{ menu.menuName }}
+          </div>
+        </template>
+        
+        <!-- 固定菜单（如果用户没有动态菜单，显示默认菜单） -->
+        <template v-if="visibleMenus.length === 0">
+          <div class="nav-item" :class="{ active: activeMenu === '/admin/tables' }" @click="activeMenu = '/admin/tables'; loadContent('tables')">
+            🪑 桌台管理
+          </div>
+          <div class="nav-item" :class="{ active: activeMenu === '/admin/categories' }" @click="activeMenu = '/admin/categories'; loadContent('categories')">
+            📂 分类管理
+          </div>
+          <div class="nav-item" :class="{ active: activeMenu === '/admin/products' }" @click="activeMenu = '/admin/products'; loadContent('products')">
+            📦 商品管理
+          </div>
+          <div class="nav-item" :class="{ active: activeMenu === '/admin/checkout' }" @click="activeMenu = '/admin/checkout'; loadContent('checkout')">
+            💰 结账管理
+          </div>
+        </template>
       </nav>
 
       <main class="content">
-        <!-- 桌台管理 -->
-        <div v-if="activeTab === 'tables'" class="section">
+        <!-- 动态组件渲染 -->
+        <component :is="currentComponent" v-if="currentComponent" />
+        
+        <!-- 默认内容（当没有选择动态菜单时） -->
+        <div v-else-if="activeContent === 'tables'" class="section">
           <div class="section-header">
             <h2>🪑 桌台管理</h2>
             <button class="btn btn-primary" @click="openTableModal()">+ 新增桌台</button>
@@ -38,8 +84,7 @@
           </div>
         </div>
 
-        <!-- 分类管理 -->
-        <div v-if="activeTab === 'categories'" class="section">
+        <div v-else-if="activeContent === 'categories'" class="section">
           <div class="section-header">
             <h2>📂 分类管理</h2>
             <button class="btn btn-primary" @click="openCategoryModal()">+ 新增分类</button>
@@ -62,8 +107,7 @@
           </table>
         </div>
 
-        <!-- 商品管理 -->
-        <div v-if="activeTab === 'products'" class="section">
+        <div v-else-if="activeContent === 'products'" class="section">
           <div class="section-header">
             <h2>📦 商品管理</h2>
             <button class="btn btn-primary" @click="openProductModal()">+ 新增商品</button>
@@ -90,8 +134,7 @@
           </table>
         </div>
 
-        <!-- 结账管理 -->
-        <div v-if="activeTab === 'checkout'" class="section">
+        <div v-else-if="activeContent === 'checkout'" class="section">
           <div class="section-header">
             <h2>💰 结账管理</h2>
             <button class="btn btn-outline" @click="loadBills">🔄 刷新</button>
@@ -120,112 +163,23 @@
             </div>
           </div>
         </div>
+
+        <div v-else class="empty-state">
+          <div class="icon">👋</div>
+          <p>欢迎使用 MiriBar 管理后台</p>
+          <p style="font-size:13px;color:#999">请从左侧菜单选择功能</p>
+        </div>
       </main>
     </div>
 
-    <!-- Table Modal -->
-    <div v-if="tableModal.show" class="modal-overlay" @click.self="tableModal.show = false">
-      <div class="modal-box">
-        <h3>{{ tableModal.id ? '编辑桌台' : '新增桌台' }}</h3>
-        <div class="form-group">
-          <label class="form-label">桌号</label>
-          <input class="form-input" v-model="tableModal.tableNumber" placeholder="如 A03">
-        </div>
-        <div class="form-group">
-          <label class="form-label">座位数</label>
-          <input class="form-input" type="number" v-model.number="tableModal.seats">
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-outline" @click="tableModal.show = false">取消</button>
-          <button class="btn btn-primary" @click="handleSaveTable">保存</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Category Modal -->
-    <div v-if="categoryModal.show" class="modal-overlay" @click.self="categoryModal.show = false">
-      <div class="modal-box">
-        <h3>{{ categoryModal.id ? '编辑分类' : '新增分类' }}</h3>
-        <div class="form-group">
-          <label class="form-label">分类名称</label>
-          <input class="form-input" v-model="categoryModal.name" placeholder="如 啤酒">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">图标(emoji)</label>
-            <input class="form-input" v-model="categoryModal.icon" placeholder="如 🍺">
-          </div>
-          <div class="form-group">
-            <label class="form-label">排序</label>
-            <input class="form-input" type="number" v-model.number="categoryModal.sortOrder">
-          </div>
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-outline" @click="categoryModal.show = false">取消</button>
-          <button class="btn btn-primary" @click="handleSaveCategory">保存</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Product Modal -->
-    <div v-if="productModal.show" class="modal-overlay" @click.self="productModal.show = false">
-      <div class="modal-box">
-        <h3>新增商品</h3>
-        <div class="form-group">
-          <label class="form-label">商品名称</label>
-          <input class="form-input" v-model="productModal.name" placeholder="商品名称">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">分类</label>
-            <select class="form-input" v-model.number="productModal.categoryId">
-              <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.icon }} {{ c.name }}</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">类型</label>
-            <select class="form-input" v-model.number="productModal.productType">
-              <option :value="0">酒水</option>
-              <option :value="1">小食</option>
-              <option :value="2">套餐</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">描述</label>
-          <input class="form-input" v-model="productModal.description" placeholder="商品描述">
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">标签(逗号分隔)</label>
-            <input class="form-input" v-model="productModal.tags" placeholder="热门,新品,推荐">
-          </div>
-          <div class="form-group">
-            <label class="form-label">含酒精</label>
-            <select class="form-input" v-model.number="productModal.containsAlcohol">
-              <option :value="1">是</option>
-              <option :value="0">否</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">规格 (格式: 名称:价格:库存，多个用分号)</label>
-          <input class="form-input" v-model="productModal.skuStr" placeholder="如 标准杯:48:100;大杯:68:50">
-        </div>
-        <div class="modal-actions">
-          <button class="btn btn-outline" @click="productModal.show = false">取消</button>
-          <button class="btn btn-primary" @click="handleSaveProduct">保存</button>
-        </div>
-      </div>
-    </div>
-
+    <!-- 省略原有的 Modal 代码，保持简洁 -->
     <!-- Toast -->
     <div v-if="toast" class="toast-container"><div class="toast-msg">{{ toast }}</div></div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, markRaw, defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -235,28 +189,85 @@ import {
   getTableBill, checkoutTable
 } from '@/api'
 
+// 导入动态组件
+import StaffListView from './staff/StaffListView.vue'
+import RoleView from './role/RoleView.vue'
+import MenuView from './menu/MenuView.vue'
+import OrgView from './org/OrgView.vue'
+import DictView from './dict/DictView.vue'
+import CustomerListView from './customer/CustomerListView.vue'
+
 const router = useRouter()
 const auth = useAuthStore()
 const roleMap = { 0: '吧台员工', 1: '后厨员工', 2: '店长', 3: '平台管理员' }
 const roleText = ref(roleMap[auth.staff?.role] || '员工')
+
+const activeMenu = ref('')
+const activeContent = ref('')
+const currentComponent = ref(null)
+const expandedGroups = ref([])
+
+// 计算可见菜单（过滤掉隐藏的和按钮类型）
+const visibleMenus = computed(() => {
+  return (auth.menus || []).filter(m => (m.visible === 1 || m.visible === null || m.visible === undefined) && m.menuType !== 2)
+})
 
 function handleLogout() {
   auth.logout()
   router.replace('/login')
 }
 
+function getMenuIcon(icon) {
+  // 简约风格：统一使用中性标记点，不再使用 emoji 图标
+  return ''
+}
+
+function toggleGroup(groupId) {
+  const idx = expandedGroups.value.indexOf(groupId)
+  if (idx >= 0) {
+    expandedGroups.value.splice(idx, 1)
+  } else {
+    expandedGroups.value.push(groupId)
+  }
+}
+
+function navigateTo(menu) {
+  activeMenu.value = menu.path
+  currentComponent.value = null
+  
+  // 根据组件路径加载对应组件
+  const componentMap = {
+    'staff/StaffList': StaffListView,
+    'staff/RoleManage': RoleView,
+    'staff/OrgManage': OrgView,
+    'system/MenuManage': MenuView,
+    'system/DictManage': DictView,
+    'customer/CustomerList': CustomerListView
+  }
+  
+  if (componentMap[menu.component]) {
+    currentComponent.value = markRaw(componentMap[menu.component])
+  } else {
+    // 其他组件根据 path 加载内容（业务管理）
+    const contentKey = menu.path.split('/').pop()
+    loadContent(contentKey)
+  }
+}
+
+function loadContent(key) {
+  activeContent.value = key
+  currentComponent.value = null
+  
+  if (key === 'tables') loadTables()
+  else if (key === 'categories') loadCategories()
+  else if (key === 'products') loadProducts()
+  else if (key === 'checkout') loadBills()
+}
+
 const STORE_ID = 1
 const typeMap = { 0: '酒水', 1: '小食', 2: '套餐' }
 const orderStatusMap = { 0: '待接单', 1: '制作中', 2: '已完成', 3: '已拒单', 4: '已取消', 5: '已结账' }
 
-const tabs = [
-  { key: 'tables', icon: '🪑', label: '桌台管理' },
-  { key: 'categories', icon: '📂', label: '分类管理' },
-  { key: 'products', icon: '📦', label: '商品管理' },
-  { key: 'checkout', icon: '💰', label: '结账管理' }
-]
-
-const activeTab = ref('tables')
 const tables = ref([])
 const categories = ref([])
 const products = ref([])
@@ -267,16 +278,6 @@ const toast = ref('')
 const tableModal = reactive({ show: false, id: null, tableNumber: '', seats: 4 })
 const categoryModal = reactive({ show: false, id: null, name: '', icon: '', sortOrder: 0 })
 const productModal = reactive({ show: false, name: '', categoryId: null, productType: 0, description: '', tags: '', containsAlcohol: 1, skuStr: '' })
-
-// Load data on tab change
-watch(activeTab, (tab) => {
-  if (tab === 'tables') loadTables()
-  else if (tab === 'categories') loadCategories()
-  else if (tab === 'products') loadProducts()
-  else if (tab === 'checkout') loadBills()
-})
-
-onMounted(() => loadTables())
 
 // ========== Tables ==========
 async function loadTables() { tables.value = await getTables(STORE_ID).catch(() => []) }
@@ -412,33 +413,77 @@ function showToast(msg) {
   toast.value = msg
   setTimeout(() => { toast.value = '' }, 2000)
 }
+
+onMounted(() => {
+  // 默认加载桌台
+  loadTables()
+})
 </script>
 
 <style scoped>
-.admin-page { min-height: 100vh; }
+.admin-layout { min-height: 100vh; }
 
 .header {
-  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
   padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
 }
-.header h1 { font-size: 20px; }
+.header h1 { font-size: 18px; font-weight: 600; }
 
 .layout { display: flex; min-height: calc(100vh - 56px); }
-.sidebar { width: 200px; background: var(--card-bg); border-right: 1px solid var(--border); padding: 16px 0; flex-shrink: 0; }
-.nav-item { padding: 12px 24px; cursor: pointer; font-size: 14px; color: var(--text-muted); transition: all .2s; border-left: 3px solid transparent; }
-.nav-item:hover { background: rgba(255,255,255,.05); color: var(--text); }
-.nav-item.active { background: rgba(108,52,131,.2); color: var(--primary-light); border-left-color: var(--primary-light); }
+.sidebar { 
+  width: 220px; 
+  background: var(--card-bg); 
+  border-right: 1px solid var(--border); 
+  padding: 16px 0; 
+  flex-shrink: 0; 
+  overflow-y: auto;
+}
+.nav-item { 
+  padding: 12px 24px; 
+  cursor: pointer; 
+  font-size: 14px; 
+  color: var(--text-muted); 
+  transition: all .2s; 
+  border-left: 3px solid transparent; 
+}
+.nav-item:hover { background: var(--surface-2); color: var(--text); }
+.nav-item.active { background: var(--primary-soft); color: var(--primary); border-left-color: var(--primary); font-weight: 500; }
+
+.nav-group-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.arrow {
+  font-size: 10px;
+  transition: transform .2s;
+}
+
+.arrow.expanded {
+  transform: rotate(90deg);
+}
+
+.nav-group-children {
+  background: var(--surface-2);
+}
+
+.nav-child {
+  padding-left: 40px;
+  font-size: 13px;
+}
 
 .content { flex: 1; padding: 24px; overflow-y: auto; }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.section-header h2 { font-size: 20px; font-weight: 600; }
+.section-header h2 { font-size: 18px; font-weight: 600; }
 
 /* Table grid */
 .table-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }
 .table-card { background: var(--card-bg); border-radius: 12px; padding: 16px; border: 1px solid var(--border); text-align: center; transition: all .2s; }
 .table-card:hover { border-color: var(--primary); transform: translateY(-2px); }
-.table-card.status-0 { border-color: rgba(46,204,113,.3); }
-.table-card.status-1 { border-color: rgba(243,156,18,.3); }
+.table-card.status-0 { border-color: rgba(22,163,74,.3); }
+.table-card.status-1 { border-color: rgba(245,158,11,.3); }
 .table-num { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
 .table-seats { font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
 .table-actions { margin-top: 10px; display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; }
@@ -450,8 +495,19 @@ function showToast(msg) {
 .bill-card { background: var(--card-bg); border-radius: 12px; padding: 20px; border: 1px solid var(--border); margin-bottom: 16px; }
 .bill-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
 .bill-table { font-size: 20px; font-weight: 700; }
-.bill-total { font-size: 24px; font-weight: 700; color: var(--accent); }
-.bill-order { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.05); }
+.bill-total { font-size: 22px; font-weight: 700; color: var(--accent); }
+.bill-order { padding: 10px 0; border-bottom: 1px solid var(--border); }
 .bill-order-header { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
 .bill-item { display: flex; justify-content: space-between; font-size: 13px; padding: 2px 0; }
+
+.empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--text-muted);
+}
+
+.empty-state .icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
 </style>

@@ -201,7 +201,7 @@ function close() {
 .clm-mask {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, .55);
+  background: rgba(16, 24, 40, .4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -212,8 +212,9 @@ function close() {
   position: relative;
   width: 100%;
   max-width: 340px;
-  background: #fff;
-  border-radius: 16px;
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   padding: 30px 24px 22px;
 }
 .clm-close {
@@ -223,14 +224,14 @@ function close() {
   border: none;
   background: transparent;
   font-size: 16px;
-  color: #9ca3af;
+  color: var(--text-muted);
   cursor: pointer;
 }
-.clm-title { margin: 0 0 4px; font-size: 20px; color: #1f2937; }
-.clm-sub { margin: 0 0 16px; font-size: 12px; color: #6b7280; }
+.clm-title { margin: 0 0 4px; font-size: 18px; font-weight: 600; color: var(--text); }
+.clm-sub { margin: 0 0 16px; font-size: 12px; color: var(--text-muted); }
 .clm-tabs {
   display: flex;
-  background: #f3f4f6;
+  background: var(--surface-2);
   border-radius: 10px;
   padding: 3px;
   margin-bottom: 18px;
@@ -242,38 +243,38 @@ function close() {
   border-radius: 8px;
   background: transparent;
   font-size: 13px;
-  color: #6b7280;
+  color: var(--text-muted);
   cursor: pointer;
   transition: all .2s;
 }
-.clm-tabs button.active { background: #8b5cf6; color: #fff; font-weight: 600; }
+.clm-tabs button.active { background: var(--primary); color: #fff; font-weight: 600; }
 .clm-input {
   width: 100%;
   box-sizing: border-box;
   padding: 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border);
   border-radius: 10px;
   font-size: 16px;
   outline: none;
   margin-bottom: 14px;
 }
-.clm-input:focus { border-color: #8b5cf6; }
+.clm-input:focus { border-color: var(--primary); }
 .clm-captcha { margin-bottom: 14px; }
 .clm-captcha :deep(input) {
   padding: 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border);
   border-radius: 10px;
   font-size: 16px;
   outline: none;
 }
-.clm-captcha :deep(input:focus) { border-color: #8b5cf6; }
+.clm-captcha :deep(input:focus) { border-color: var(--primary); }
 .clm-captcha :deep(img) { height: 46px; }
 .clm-btn {
   width: 100%;
   padding: 12px;
   border: none;
   border-radius: 10px;
-  background: #8b5cf6;
+  background: var(--primary);
   color: #fff;
   font-size: 15px;
   font-weight: 600;
@@ -285,16 +286,16 @@ function close() {
   margin: -4px auto 12px;
   border: none;
   background: transparent;
-  color: #8b5cf6;
+  color: var(--primary);
   font-size: 13px;
   cursor: pointer;
 }
-.clm-resend:disabled { color: #9ca3af; cursor: not-allowed; }
-.clm-hint { margin: 12px 0 0; font-size: 12px; color: #9ca3af; text-align: center; }
+.clm-resend:disabled { color: var(--text-muted); cursor: not-allowed; }
+.clm-hint { margin: 12px 0 0; font-size: 12px; color: var(--text-muted); text-align: center; }
 .clm-error {
   margin-top: 12px;
-  background: #fef2f2;
-  color: #dc2626;
+  background: rgba(239,68,68,.08);
+  color: var(--danger);
   font-size: 13px;
   padding: 8px 12px;
   border-radius: 8px;

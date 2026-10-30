@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.miribar.ordering.mapper.OrgMapper">
+    
+    <resultMap id="OrgResult" type="com.miribar.ordering.entity.Org">
+        <id property="id" column="id"/>
+        <result property="parentId" column="parent_id"/>
+        <result property="orgName" column="org_name"/>
+        <result property="orgCode" column="org_code"/>
+        <result property="orgType" column="org_type"/>
+        <result property="leader" column="leader"/>
+        <result property="phone" column="phone"/>
+        <result property="address" column="address"/>
+        <result property="sortOrder" column="sort_order"/>
+        <result property="status" column="status"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+    </resultMap>
+    
+    <select id="selectAll" resultMap="OrgResult">
+        SELECT * FROM t_org ORDER BY sort_order, id
+    </select>
+    
+    <select id="selectByStatus" resultMap="OrgResult">
+        SELECT * FROM t_org WHERE status = #{status} ORDER BY sort_order, id
+    </select>
+    
+    <select id="selectById" resultMap="OrgResult">
+        SELECT * FROM t_org WHERE id = #{id}
+    </select>
+    
+    <select id="selectByOrgCode" resultMap="OrgResult">
+        SELECT * FROM t_org WHERE org_code = #{orgCode}
+    </select>
+    
+    <select id="selectByParentId" resultMap="OrgResult">
+        SELECT * FROM t_org WHERE parent_id = #{parentId} ORDER BY sort_order, id
+    </select>
+    
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_org (parent_id, org_name, org_code, org_type, leader, phone, address, sort_order, status)
+        VALUES (#{parentId}, #{orgName}, #{orgCode}, #{orgType}, #{leader}, #{phone}, #{address}, #{sortOrder}, #{status})
+    </insert>
+    
+    <update id="update">
+        UPDATE t_org
+        <set>
+            <if test="parentId != null">parent_id = #{parentId},</if>
+            <if test="orgName != null">org_name = #{orgName},</if>
+            <if test="orgCode != null">org_code = #{orgCode},</if>
+            <if test="orgType != null">org_type = #{orgType},</if>
+            <if test="leader != null">leader = #{leader},</if>
+            <if test="phone != null">phone = #{phone},</if>
+            <if test="address != null">address = #{address},</if>
+            <if test="sortOrder != null">sort_order = #{sortOrder},</if>
+            <if test="status != null">status = #{status},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+    
+    <delete id="deleteById">
+        DELETE FROM t_org WHERE id = #{id}
+    </delete>
+    
+    <select id="selectByKeyword" resultMap="OrgResult">
+        SELECT * FROM t_org 
+        WHERE org_name LIKE CONCAT('%', #{keyword}, '%')
+           OR org_code LIKE CONCAT('%', #{keyword}, '%')
+           OR leader LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY sort_order, id
+    </select>
+    
+</mapper>

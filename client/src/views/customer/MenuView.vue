@@ -2,19 +2,19 @@
   <div class="menu-page">
     <!-- Header -->
     <header class="header">
-      <h1>🍸 MiriBar 点餐</h1>
+      <h1>MiriBar 点餐</h1>
       <div class="table-info">{{ tableText }}</div>
       <div class="user-row">
-        <button v-if="!customer.isLoggedIn" class="login-chip" @click="showLogin = true">👤 登录</button>
+        <button v-if="!customer.isLoggedIn" class="login-chip" @click="showLogin = true">登录</button>
         <span v-else class="user-chip" @click="handleCustomerLogout">{{ customer.displayName }} ▾</span>
       </div>
-      <div class="warning-banner">⚠️ 未成年人禁止饮酒 | 理性饮酒，切勿酗酒</div>
+      <div class="warning-banner">未成年人禁止饮酒 · 理性饮酒，切勿酗酒</div>
     </header>
 
     <!-- Nav tabs -->
     <nav class="nav-tabs">
-      <div class="nav-tab" :class="{ active: activeTab === 'menu' }" @click="activeTab = 'menu'">📋 菜单</div>
-      <div class="nav-tab" :class="{ active: activeTab === 'orders' }" @click="goToOrders">📦 我的订单</div>
+      <div class="nav-tab" :class="{ active: activeTab === 'menu' }" @click="activeTab = 'menu'">菜单</div>
+      <div class="nav-tab" :class="{ active: activeTab === 'orders' }" @click="goToOrders">我的订单</div>
     </nav>
 
     <!-- Category tabs -->
@@ -32,12 +32,12 @@
     <div class="product-list" ref="listRef" @scroll="onScroll">
       <div v-if="loading" class="loading-wrap"><div class="spinner"></div></div>
       <div v-else-if="menuData.length === 0" class="empty-state">
-        <div class="icon">📋</div>暂无菜单数据
+        <div class="icon">·</div>暂无菜单数据
       </div>
       <template v-else>
         <div v-for="(group, idx) in menuData" :key="group.category.id" :ref="el => setCategoryRef(el, idx)" class="category-section">
           <div class="category-title">
-            <span class="icon">{{ group.category.icon || '📌' }}</span>
+            <span class="icon" v-if="group.category.icon">{{ group.category.icon }}</span>
             {{ group.category.name }}
           </div>
           <ProductCard
@@ -208,49 +208,52 @@ function showToast(msg) {
 </script>
 
 <style scoped>
-.menu-page { padding-bottom: 80px; }
+.menu-page { padding-bottom: 88px; background: var(--bg); min-height: 100vh; }
 
 .header {
-  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
   padding: 16px 20px; position: sticky; top: 0; z-index: 100;
 }
 .header h1 { font-size: 18px; font-weight: 600; }
-.table-info { font-size: 13px; opacity: .85; margin-top: 4px; }
-.user-row { position: absolute; top: 14px; right: 16px; }
-.login-chip {
-  background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.4);
-  color: #fff; border-radius: 20px; padding: 5px 14px; font-size: 12px; cursor: pointer;
+.table-info { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.user-row { position: absolute; top: 16px; right: 16px; }
+.login-chip, .user-chip {
+  background: var(--surface-2); border: none;
+  color: var(--text); border-radius: 999px; padding: 6px 14px; font-size: 12px; cursor: pointer;
 }
-.login-chip:hover { background: rgba(255,255,255,.3); }
-.user-chip {
-  background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.35);
-  color: #fff; border-radius: 20px; padding: 5px 14px; font-size: 12px; cursor: pointer;
-}
+.login-chip:hover, .user-chip:hover { background: var(--border); }
 .warning-banner {
-  background: rgba(231,76,60,.2); border: 1px solid var(--danger);
-  border-radius: 6px; padding: 8px 12px; margin-top: 10px;
-  font-size: 12px; color: #FF6B6B;
+  background: rgba(245,158,11,.08);
+  border-radius: var(--radius-sm); padding: 7px 12px; margin-top: 12px;
+  font-size: 12px; color: var(--warning);
 }
 
 .nav-tabs { display: flex; background: var(--card-bg); border-bottom: 1px solid var(--border); }
 .nav-tab {
-flex: 1; padding: 12px; text-align: center; font-size: 14px; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all .2s; }
-.nav-tab.active { color: var(--primary-light); border-bottom-color: var(--primary); }
+  flex: 1; padding: 12px; text-align: center; font-size: 14px; color: var(--text-muted);
+  cursor: pointer; border-bottom: 2px solid transparent; transition: color .2s, border-color .2s;
+}
+.nav-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 500; }
 
 .category-tabs {
   display: flex; overflow-x: auto; padding: 12px 16px; gap: 8px;
-  background: var(--card-bg); position: sticky; top: 80px; z-index: 90;
+  background: var(--card-bg); position: sticky; top: 108px; z-index: 90;
+  border-bottom: 1px solid var(--border);
 }
 .category-tabs::-webkit-scrollbar { display: none; }
 .tab-item {
-  flex-shrink: 0; padding: 8px 16px; border-radius: 20px;
-  background: rgba(255,255,255,.08); color: var(--text-muted);
-  font-size: 14px; cursor: pointer; transition: all .2s; border: 1px solid transparent;
+  flex-shrink: 0; padding: 7px 16px; border-radius: 999px;
+  background: var(--surface-2); color: var(--text-muted);
+  font-size: 13px; cursor: pointer; transition: background .2s, color .2s; border: none;
 }
-.tab-item.active { background: var(--primary); color: #fff; border-color: var(--primary-light); }
+.tab-item.active { background: var(--primary); color: #fff; }
 
-.product-list { padding: 12px 16px; overflow-y: auto; max-height: calc(100vh - 200px); }
-.category-section { margin-bottom: 24px; }
-.category-title { font-size: 16px; font-weight: 600; margin-bottom: 12px; padding-left: 4px; display: flex; align-items: center; gap: 8px; }
-.category-title .icon { font-size: 20px; }
+.product-list { padding: 16px; overflow-y: auto; max-height: calc(100vh - 216px); }
+.category-section { margin-bottom: 28px; }
+.category-title {
+  font-size: 15px; font-weight: 600; margin-bottom: 12px;
+  display: flex; align-items: center; gap: 6px;
+}
+.category-title .icon { font-size: 16px; }
 </style>

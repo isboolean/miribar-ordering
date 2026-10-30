@@ -31,6 +31,34 @@ const routes = [
     name: 'Admin',
     component: () => import('../views/admin/AdminView.vue'),
     meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  // 角色管理（独立页面，用于测试）
+  {
+    path: '/admin/role',
+    name: 'RoleManage',
+    component: () => import('../views/admin/role/RoleView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  // 菜单管理（独立页面，用于测试）
+  {
+    path: '/admin/menu',
+    name: 'MenuManage',
+    component: () => import('../views/admin/menu/MenuView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  // 组织管理（独立页面）
+  {
+    path: '/admin/org',
+    name: 'OrgManage',
+    component: () => import('../views/admin/org/OrgView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  // 字典管理（独立页面）
+  {
+    path: '/admin/dict',
+    name: 'DictManage',
+    component: () => import('../views/admin/dict/DictView.vue'),
+    meta: { requiresAuth: true, requiresAdmin: true }
   }
 ]
 

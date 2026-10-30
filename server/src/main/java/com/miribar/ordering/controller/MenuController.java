@@ -1,53 +1,65 @@
 package com.miribar.ordering.controller;
 
 import com.miribar.ordering.common.Result;
-import com.miribar.ordering.dto.ProductVO;
-import com.miribar.ordering.entity.Category;
-import com.miribar.ordering.service.ProductService;
+import com.miribar.ordering.entity.Menu;
+import com.miribar.ordering.service.MenuService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/menu")
+@RequestMapping("/api/admin/menu")
 public class MenuController {
-
-    private final ProductService productService;
-
-    public MenuController(ProductService productService) {
-        this.productService = productService;
+    
+    private final MenuService menuService;
+    
+    public MenuController(MenuService menuService) {
+        this.menuService = menuService;
     }
-
+    
     /**
-     * 获取门店完整菜单（按分类分组）
+     * 获取菜单列表（树形）
      */
-    @GetMapping("/store/{storeId}")
-    public Result<List<Map<String, Object>>> getMenu(@PathVariable Long storeId) {
-        return Result.success(productService.getMenu(storeId));
+    @GetMapping("/list")
+    public Result<List<Map<String, Object>>> list() {
+        List<Map<String, Object>> tree = menuService.listMenuTree();
+        return Result.success(tree);
     }
-
+    
     /**
-     * 获取门店分类列表
+     * 获取菜单详情
      */
-    @GetMapping("/store/{storeId}/categories")
-    public Result<List<Category>> getCategories(@PathVariable Long storeId) {
-        return Result.success(productService.getCategories(storeId));
+    @GetMapping("/{id}")
+    public Result<Menu> getById(@PathVariable Long id) {
+        Menu menu = menuService.getById(id);
+        return Result.success(menu);
     }
-
+    
     /**
-     * 获取分类下的商品列表
+     * 新增菜单
      */
-    @GetMapping("/category/{categoryId}")
-    public Result<List<ProductVO>> getProductsByCategory(@PathVariable Long categoryId) {
-        return Result.success(productService.getProductsByCategory(categoryId));
+    @PostMapping
+    public Result<Void> add(@RequestBody Menu menu) {
+        menuService.add(menu);
+        return Result.success(null);
     }
-
+    
     /**
-     * 获取商品详情
+     * 修改菜单
      */
-    @GetMapping("/product/{productId}")
-    public Result<ProductVO> getProductDetail(@PathVariable Long productId) {
-        return Result.success(productService.getProductDetail(productId));
+    @PutMapping
+    public Result<Void> update(@RequestBody Menu menu) {
+        menuService.update(menu);
+        return Result.success(null);
+    }
+    
+    /**
+     * 删除菜单
+     */
+    @DeleteMapping("/{id}")
+    public Result<Void> delete(@PathVariable Long id) {
+        menuService.delete(id);
+        return Result.success(null);
     }
 }

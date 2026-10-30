@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.miribar.ordering.mapper.StaffRoleMapper">
+    
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO t_staff_role (staff_id, role_id)
+        VALUES (#{staffId}, #{roleId})
+    </insert>
+    
+    <insert id="batchInsert">
+        INSERT INTO t_staff_role (staff_id, role_id) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (#{item.staffId}, #{item.roleId})
+        </foreach>
+    </insert>
+    
+    <delete id="deleteByStaffId">
+        DELETE FROM t_staff_role WHERE staff_id = #{staffId}
+    </delete>
+    
+    <select id="selectRoleIdsByStaffId" resultType="java.lang.Long">
+        SELECT role_id FROM t_staff_role WHERE staff_id = #{staffId}
+    </select>
+    
+    <select id="selectStaffIdsByRoleId" resultType="java.lang.Long">
+        SELECT staff_id FROM t_staff_role WHERE role_id = #{roleId}
+    </select>
+    
+</mapper>

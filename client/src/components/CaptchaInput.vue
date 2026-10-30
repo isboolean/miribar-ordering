@@ -48,17 +48,17 @@ defineExpose({ refresh, captchaId })
   flex: 1;
   min-width: 0;
   padding: 11px 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border);
   border-radius: 8px;
   font-size: 15px;
   outline: none;
   transition: border-color .2s;
 }
-.captcha-input:focus { border-color: #8b5cf6; }
+.captcha-input:focus { border-color: var(--primary); }
 .captcha-img {
   height: 44px;
   border-radius: 8px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border);
   cursor: pointer;
   flex-shrink: 0;
   display: flex;
@@ -66,8 +66,8 @@ defineExpose({ refresh, captchaId })
   justify-content: center;
   min-width: 110px;
   font-size: 12px;
-  color: #9ca3af;
-  background: #f3f4f6;
+  color: var(--text-muted);
+  background: var(--surface-2);
   object-fit: cover;
 }
 .captcha-loading { padding: 0 12px; }
