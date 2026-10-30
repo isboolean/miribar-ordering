@@ -1,0 +1,74 @@
+.page {
+  padding: 24rpx 24rpx calc(180rpx + env(safe-area-inset-bottom));
+}
+
+.table-bar {
+  display: flex;
+  align-items: center;
+  padding: 28rpx 32rpx;
+  margin-bottom: 20rpx;
+}
+.tb-label { color: var(--color-text-secondary); margin-right: 24rpx; }
+.tb-value { font-size: 32rpx; font-weight: 700; color: var(--color-primary); }
+
+.section { padding: 28rpx 32rpx; margin-bottom: 20rpx; }
+.section-title { font-size: 30rpx; font-weight: 700; margin-bottom: 20rpx; }
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+.oi-name { font-weight: 600; }
+.oi-sku { font-size: 22rpx; color: var(--color-text-secondary); margin: 4rpx 0 8rpx; }
+.oi-remark {
+  font-size: 22rpx;
+  background: #f6f6f8;
+  border-radius: 8rpx;
+  padding: 8rpx 12rpx;
+  width: 320rpx;
+}
+.oi-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.empty { text-align: center; color: var(--color-text-secondary); padding: 48rpx 0; }
+.empty-link { color: var(--color-primary); margin-top: 12rpx; }
+
+.remark-input {
+  width: 100%;
+  min-height: 80rpx;
+  font-size: 26rpx;
+}
+
+.pay-tip {
+  font-size: 22rpx;
+  color: var(--color-text-secondary);
+  text-align: center;
+  margin: 8rpx 0 24rpx;
+}
+
+.submit-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--color-card);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20rpx 32rpx;
+  box-shadow: 0 -4rpx 16rpx rgba(31, 31, 46, 0.06);
+}
+.total { font-size: 28rpx; }
+.total-price { font-size: 40rpx; }
+.submit-btn {
+  width: 260rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  font-size: 30rpx;
+}

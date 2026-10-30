@@ -57,5 +57,35 @@
         WHERE sr.staff_id = #{staffId}
         ORDER BY r.id
     </select>
+
+    <!-- 角色列表公共条件，分页查询与总数统计复用 -->
+    <sql id="roleConditions">
+        <where>
+            <if test="roleName != null and roleName != ''">
+                AND role_name LIKE CONCAT('%', #{roleName}, '%')
+            </if>
+            <if test="roleCode != null and roleCode != ''">
+                AND role_code LIKE CONCAT('%', #{roleCode}, '%')
+            </if>
+            <if test="dataScope != null">
+                AND data_scope = #{dataScope}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectPage" resultMap="RoleResult">
+        SELECT * FROM t_role
+        <include refid="roleConditions"/>
+        ORDER BY id
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="countByCondition" resultType="long">
+        SELECT COUNT(1) FROM t_role
+        <include refid="roleConditions"/>
+    </select>
     
 </mapper>

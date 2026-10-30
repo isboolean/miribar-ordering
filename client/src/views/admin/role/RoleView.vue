@@ -5,6 +5,13 @@
       <button class="btn btn-primary" @click="showAddDialog">新增角色</button>
     </div>
 
+    <SearchFilterBar
+      :fields="searchFields"
+      :model="filters"
+      @search="handleSearch"
+      @reset="handleReset"
+    />
+
     <div class="table-container">
       <table class="data-table">
         <thead>
@@ -42,6 +49,14 @@
         </tbody>
       </table>
     </div>
+
+    <PaginationBar
+      :total="total"
+      :page="page"
+      :page-size="pageSize"
+      @update:page="handlePageChange"
+      @update:page-size="handlePageSizeChange"
+    />
 
     <!-- 新增/编辑对话框 -->
     <div v-if="dialogVisible" class="dialog-mask" @click.self="closeDialog">
@@ -86,43 +101,19 @@
     <!-- 分配权限对话框 -->
     <div v-if="permissionDialogVisible" class="dialog-mask" @click.self="closePermissionDialog">
       <div class="dialog dialog-large">
-        <h3>分配权限 - {{ currentRole?.roleName }}</h3>
+        <div class="dialog-head">
+          <h3>分配权限 - {{ currentRole?.roleName }}</h3>
+          <span class="selected-count">已选 {{ selectedMenuIds.length }} 项</span>
+        </div>
         <div class="menu-tree-container">
-          <div v-for="menu in menuTree" :key="menu.id" class="menu-tree-item">
-            <label>
-              <input 
-                type="checkbox" 
-                :value="menu.id" 
-                v-model="selectedMenuIds"
-                @change="handleMenuCheck(menu)"
-              />
-              {{ menu.menuName }}
-            </label>
-            <div v-if="menu.children && menu.children.length > 0" class="menu-children">
-              <div v-for="child in menu.children" :key="child.id" class="menu-tree-item">
-                <label>
-                  <input 
-                    type="checkbox" 
-                    :value="child.id" 
-                    v-model="selectedMenuIds"
-                    @change="handleMenuCheck(child)"
-                  />
-                  {{ child.menuName }}
-                </label>
-                <div v-if="child.children && child.children.length > 0" class="menu-children">
-                  <label v-for="grandChild in child.children" :key="grandChild.id" class="menu-tree-item">
-                    <input 
-                      type="checkbox" 
-                      :value="grandChild.id" 
-                      v-model="selectedMenuIds"
-                    />
-                    {{ grandChild.menuName }}
-                    <span v-if="grandChild.permissionCode" class="permission-code">({{ grandChild.permissionCode }})</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-          </div>
+          <PermissionTreeNode
+            v-for="menu in menuTree"
+            :key="menu.id"
+            :node="menu"
+            :depth="0"
+            :checked-ids="selectedMenuIds"
+            @toggle="handleToggle"
+          />
           <div v-if="menuTree.length === 0" class="empty">暂无菜单数据</div>
         </div>
         <div class="dialog-footer">
@@ -135,10 +126,49 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { getRoleList, addRole, updateRole, deleteRole, assignRoleMenus, getRoleMenus, getMenuList } from '@/api'
+import SearchFilterBar from '@/components/SearchFilterBar.vue'
+import PaginationBar from '@/components/PaginationBar.vue'
+import PermissionTreeNode from './PermissionTreeNode.vue'
 
 const roles = ref([])
+
+// 搜索条件（各条件独立控件，可组合使用）
+const filters = reactive({ roleName: '', roleCode: '', dataScope: '', status: '' })
+const searchFields = [
+  { key: 'roleName', label: '角色名称', placeholder: '按角色名称搜索' },
+  { key: 'roleCode', label: '角色编码', placeholder: '按角色编码搜索' },
+  {
+    key: 'dataScope', label: '数据范围', type: 'select',
+    options: [
+      { label: '全部', value: '' },
+      { label: '全部数据', value: 1 },
+      { label: '本组织及下级', value: 2 },
+      { label: '仅本组织', value: 3 }
+    ]
+  },
+  {
+    key: 'status', label: '状态', type: 'select',
+    options: [
+      { label: '全部', value: '' },
+      { label: '启用', value: 1 },
+      { label: '禁用', value: 0 }
+    ]
+  }
+]
+
+// 分页状态：与后端返回的 total / page / pageSize 保持一致
+const page = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+
+function resetFilters() {
+  filters.roleName = ''
+  filters.roleCode = ''
+  filters.dataScope = ''
+  filters.status = ''
+}
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const form = ref({
@@ -156,7 +186,51 @@ const menuTree = ref([])
 const selectedMenuIds = ref([])
 
 const loadData = async () => {
-  roles.value = await getRoleList()
+  const params = {
+    page: page.value,
+    pageSize: pageSize.value,
+    roleName: filters.roleName.trim(),
+    roleCode: filters.roleCode.trim(),
+    dataScope: filters.dataScope,
+    status: filters.status
+  }
+  try {
+    const result = await getRoleList(params)
+    roles.value = result.list || []
+    total.value = result.total || 0
+    // 删除等操作导致当前页无数据时，自动回退一页
+    if (roles.value.length === 0 && total.value > 0 && page.value > 1) {
+      page.value = page.value - 1
+      await loadData()
+    }
+  } catch (e) {
+    console.error('加载角色列表失败:', e)
+    roles.value = []
+    total.value = 0
+  }
+}
+
+// 查询条件变化后回到第一页
+function handleSearch() {
+  page.value = 1
+  loadData()
+}
+
+function handleReset() {
+  resetFilters()
+  page.value = 1
+  loadData()
+}
+
+function handlePageChange(target) {
+  page.value = target
+  loadData()
+}
+
+function handlePageSizeChange(size) {
+  pageSize.value = size
+  page.value = 1
+  loadData()
 }
 
 const getDataScopeText = (scope) => {
@@ -195,6 +269,8 @@ const handleSubmit = async () => {
     } else {
       await addRole(form.value)
       alert('新增成功')
+      // 新增记录排在列表末尾，跳到最后一页便于查看
+      page.value = Math.max(1, Math.ceil((total.value + 1) / pageSize.value))
     }
     closeDialog()
     loadData()
@@ -230,21 +306,39 @@ const closePermissionDialog = () => {
   selectedMenuIds.value = []
 }
 
-const handleMenuCheck = (menu) => {
-  // 如果选中父菜单，自动选中子菜单
-  if (menu.children && menu.children.length > 0) {
-    const checkAll = (items) => {
-      for (const item of items) {
-        if (!selectedMenuIds.value.includes(item.id)) {
-          selectedMenuIds.value.push(item.id)
-        }
-        if (item.children) {
-          checkAll(item.children)
-        }
-      }
+// 收集节点及其全部后代的 id
+const collectIds = (node) => [node.id, ...(node.children || []).flatMap(collectIds)]
+
+// 建立「节点 → 父节点」索引，用于父级勾选状态联动
+const buildParentMap = () => {
+  const map = new Map()
+  const walk = (nodes, parent) => {
+    for (const node of nodes) {
+      map.set(node.id, parent)
+      if (node.children?.length) walk(node.children, node)
     }
-    checkAll(menu.children)
   }
+  walk(menuTree.value, null)
+  return map
+}
+
+const handleToggle = (node, checked) => {
+  const set = new Set(selectedMenuIds.value)
+  const ids = collectIds(node)
+  if (checked) ids.forEach(id => set.add(id))
+  else ids.forEach(id => set.delete(id))
+
+  // 父级联动：子项全选时自动选中父级，未全选则取消父级
+  const parentMap = buildParentMap()
+  let parent = parentMap.get(node.id)
+  while (parent) {
+    const allChecked = (parent.children || []).every(child => set.has(child.id))
+    if (allChecked) set.add(parent.id)
+    else set.delete(parent.id)
+    parent = parentMap.get(parent.id)
+  }
+
+  selectedMenuIds.value = [...set]
 }
 
 const handleSavePermission = async () => {
@@ -280,7 +374,7 @@ onMounted(() => {
 }
 
 .table-container {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -294,39 +388,39 @@ onMounted(() => {
 .data-table td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border);
 }
 
 .data-table th {
-  background: #f5f5f5;
+  background: var(--surface-2);
   font-weight: 600;
 }
 
 .status-enabled {
-  color: #52c41a;
+  color: var(--success);
 }
 
 .status-disabled {
-  color: #f5222d;
+  color: var(--danger);
 }
 
 .btn {
   padding: 6px 16px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--border);
   border-radius: 4px;
   cursor: pointer;
-  background: #fff;
+  background: var(--card-bg);
 }
 
 .btn-primary {
-  background: #1890ff;
+  background: var(--primary);
   color: #fff;
-  border-color: #1890ff;
+  border-color: var(--primary);
 }
 
 .btn-danger {
-  color: #f5222d;
-  border-color: #f5222d;
+  color: var(--danger);
+  border-color: var(--danger);
 }
 
 .btn-sm {
@@ -348,7 +442,7 @@ onMounted(() => {
 }
 
 .dialog {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 24px;
   min-width: 400px;
@@ -379,7 +473,7 @@ onMounted(() => {
 .form-item select {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--border);
   border-radius: 4px;
   font-size: 14px;
 }
@@ -397,36 +491,32 @@ onMounted(() => {
 }
 
 .menu-tree-container {
-  max-height: 400px;
+  max-height: 420px;
   overflow-y: auto;
-  border: 1px solid #eee;
+  border: 1px solid var(--border);
   border-radius: 4px;
-  padding: 12px;
+  padding: 8px;
 }
 
-.menu-tree-item {
-  padding: 6px 0;
+.dialog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
 }
 
-.menu-tree-item label {
-  cursor: pointer;
+.dialog-head h3 {
+  margin: 0;
 }
 
-.menu-children {
-  margin-left: 24px;
-  border-left: 1px dashed #d9d9d9;
-  padding-left: 12px;
-}
-
-.permission-code {
-  color: #999;
+.selected-count {
   font-size: 12px;
-  margin-left: 4px;
+  color: var(--text-muted);
 }
 
 .empty {
   text-align: center;
   padding: 40px;
-  color: #999;
+  color: var(--text-muted);
 }
 </style>

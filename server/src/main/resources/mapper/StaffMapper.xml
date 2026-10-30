@@ -3,31 +3,96 @@
 <mapper namespace="com.miribar.ordering.mapper.StaffMapper">
 
     <select id="selectById" resultType="Staff">
-        SELECT * FROM t_staff WHERE id = #{id}
+        SELECT s.*, o.org_name AS orgName
+        FROM t_staff s LEFT JOIN t_org o ON o.id = s.org_id
+        WHERE s.id = #{id}
     </select>
 
     <select id="selectByUsername" resultType="Staff">
-        SELECT * FROM t_staff WHERE username = #{username}
+        SELECT s.*, o.org_name AS orgName
+        FROM t_staff s LEFT JOIN t_org o ON o.id = s.org_id
+        WHERE s.username = #{username}
     </select>
 
     <select id="selectByPhone" resultType="Staff">
-        SELECT * FROM t_staff WHERE phone = #{phone} LIMIT 1
+        SELECT s.*, o.org_name AS orgName
+        FROM t_staff s LEFT JOIN t_org o ON o.id = s.org_id
+        WHERE s.phone = #{phone} LIMIT 1
+    </select>
+
+    <select id="selectMaxStaffNo" resultType="java.lang.Long">
+        SELECT MAX(CAST(username AS UNSIGNED)) FROM t_staff WHERE username REGEXP '^[0-9]{10}$'
     </select>
     
     <select id="selectAll" resultType="Staff">
-        SELECT * FROM t_staff ORDER BY id
+        SELECT s.*, o.org_name AS orgName
+        FROM t_staff s LEFT JOIN t_org o ON o.id = s.org_id
+        ORDER BY s.id
     </select>
     
     <select id="selectByStoreId" resultType="Staff">
-        SELECT * FROM t_staff WHERE store_id = #{storeId} ORDER BY id
+        SELECT s.*, o.org_name AS orgName
+        FROM t_staff s LEFT JOIN t_org o ON o.id = s.org_id
+        WHERE s.store_id = #{storeId} ORDER BY s.id
     </select>
     
     <select id="selectByKeyword" resultType="Staff">
-        SELECT * FROM t_staff 
-        WHERE username LIKE CONCAT('%', #{keyword}, '%') 
-           OR real_name LIKE CONCAT('%', #{keyword}, '%')
-           OR phone LIKE CONCAT('%', #{keyword}, '%')
-        ORDER BY id
+        SELECT s.*, o.org_name AS orgName
+        FROM t_staff s LEFT JOIN t_org o ON o.id = s.org_id
+        WHERE s.username LIKE CONCAT('%', #{keyword}, '%') 
+           OR s.real_name LIKE CONCAT('%', #{keyword}, '%')
+           OR s.phone LIKE CONCAT('%', #{keyword}, '%')
+        ORDER BY s.id
+    </select>
+
+    <!-- 员工列表公共条件，分页查询与总数统计复用，保证两者条件一致 -->
+    <sql id="staffConditions">
+        <where>
+            <if test="storeId != null">
+                AND s.store_id = #{storeId}
+            </if>
+            <if test="orgIds != null and orgIds.size() > 0">
+                AND s.org_id IN
+                <foreach collection="orgIds" item="oid" open="(" separator="," close=")">
+                    #{oid}
+                </foreach>
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (s.username LIKE CONCAT('%', #{keyword}, '%')
+                  OR s.real_name LIKE CONCAT('%', #{keyword}, '%')
+                  OR s.phone LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="phone != null and phone != ''">
+                AND s.phone LIKE CONCAT('%', #{phone}, '%')
+            </if>
+            <if test="role != null">
+                AND s.role = #{role}
+            </if>
+            <if test="status != null">
+                AND s.status = #{status}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectByCondition" resultType="Staff">
+        SELECT s.*, o.org_name AS orgName
+        FROM t_staff s LEFT JOIN t_org o ON o.id = s.org_id
+        <include refid="staffConditions"/>
+        ORDER BY s.id
+    </select>
+
+    <select id="selectPage" resultType="Staff">
+        SELECT s.*, o.org_name AS orgName
+        FROM t_staff s LEFT JOIN t_org o ON o.id = s.org_id
+        <include refid="staffConditions"/>
+        ORDER BY s.id
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="countByCondition" resultType="long">
+        SELECT COUNT(1)
+        FROM t_staff s
+        <include refid="staffConditions"/>
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">

@@ -1,5 +1,7 @@
 package com.miribar.ordering.controller;
 
+import com.miribar.ordering.common.PageQuery;
+import com.miribar.ordering.common.PageResult;
 import com.miribar.ordering.common.Result;
 import com.miribar.ordering.entity.Customer;
 import com.miribar.ordering.mapper.CustomerMapper;
@@ -18,25 +20,47 @@ public class CustomerManageController {
     }
     
     /**
-     * 获取客户列表
+     * 分页获取客户列表
+     *
+     * @param keyword  昵称/手机号/OpenID（可选）
+     * @param nickname 昵称（模糊，可选）
+     * @param phone    手机号（模糊，可选）
+     * @param openid   OpenID（模糊，可选）
+     * @param page     页码，默认 1
+     * @param pageSize 每页条数，默认 10，可选 15 / 30
      */
     @GetMapping("/list")
-    public Result<List<Customer>> list(
+    public Result<PageResult<Customer>> list(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String nickname,
+            @RequestParam(required = false) String phone,
+            @RequestParam(required = false) String openid,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer pageSize) {
-        
-        List<Customer> customers;
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            customers = customerMapper.selectByKeyword(keyword.trim());
-        } else {
-            customers = customerMapper.selectAll();
+        int current = PageQuery.page(page);
+        int size = PageQuery.pageSize(pageSize);
+        String kw = trimToNull(keyword);
+        String nicknameKw = trimToNull(nickname);
+        String phoneKw = trimToNull(phone);
+        String openidKw = trimToNull(openid);
+
+        long total = customerMapper.countByCondition(nicknameKw, phoneKw, openidKw, kw);
+        if (total == 0) {
+            return Result.success(PageResult.empty(0, current, size));
         }
-        
+        List<Customer> customers = customerMapper.selectPage(nicknameKw, phoneKw, openidKw, kw,
+                PageQuery.offset(current, size), size);
         // 清除密码字段
         customers.forEach(c -> c.setPassword(null));
-        
-        return Result.success(customers);
+        return Result.success(PageResult.of(customers, total, current, size));
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
     
     /**

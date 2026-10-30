@@ -14,12 +14,48 @@
         SELECT * FROM t_customer WHERE phone = #{phone} LIMIT 1
     </select>
 
+    <select id="selectByOpenid" resultType="Customer">
+        SELECT * FROM t_customer WHERE openid = #{openid} LIMIT 1
+    </select>
+
     <select id="selectByKeyword" resultType="Customer">
         SELECT * FROM t_customer 
         WHERE nickname LIKE CONCAT('%', #{keyword}, '%')
            OR phone LIKE CONCAT('%', #{keyword}, '%')
            OR openid LIKE CONCAT('%', #{keyword}, '%')
         ORDER BY created_at DESC
+    </select>
+
+    <!-- 客户列表公共条件，分页查询与总数统计复用 -->
+    <sql id="customerConditions">
+        <where>
+            <if test="nickname != null and nickname != ''">
+                AND nickname LIKE CONCAT('%', #{nickname}, '%')
+            </if>
+            <if test="phone != null and phone != ''">
+                AND phone LIKE CONCAT('%', #{phone}, '%')
+            </if>
+            <if test="openid != null and openid != ''">
+                AND openid LIKE CONCAT('%', #{openid}, '%')
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (nickname LIKE CONCAT('%', #{keyword}, '%')
+                  OR phone LIKE CONCAT('%', #{keyword}, '%')
+                  OR openid LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectPage" resultType="Customer">
+        SELECT * FROM t_customer
+        <include refid="customerConditions"/>
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="countByCondition" resultType="long">
+        SELECT COUNT(1) FROM t_customer
+        <include refid="customerConditions"/>
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">

@@ -1,5 +1,6 @@
 package com.miribar.ordering.service;
 
+import com.miribar.ordering.common.PageResult;
 import com.miribar.ordering.entity.DictData;
 
 import java.util.List;
@@ -11,6 +12,19 @@ public interface DictDataService {
     List<DictData> listByDictType(String dictType);
     
     List<DictData> listEnabled();
+
+    /**
+     * 分页查询字典数据
+     *
+     * @param dictType  字典类型（可选，为空表示全部类型）
+     * @param dictLabel 标签模糊匹配（可选）
+     * @param dictValue 键值模糊匹配（可选）
+     * @param status    状态（可选）
+     * @param page      页码，从 1 开始
+     * @param pageSize  每页条数
+     */
+    PageResult<DictData> page(String dictType, String dictLabel, String dictValue, Integer status,
+                              int page, int pageSize);
     
     DictData getById(Long id);
     

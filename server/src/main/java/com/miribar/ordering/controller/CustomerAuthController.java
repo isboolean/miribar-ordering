@@ -8,9 +8,11 @@ import com.miribar.ordering.dto.CustomerPasswordLoginRequest;
 import com.miribar.ordering.dto.CustomerVO;
 import com.miribar.ordering.dto.SetPasswordRequest;
 import com.miribar.ordering.dto.SmsRequest;
+import com.miribar.ordering.dto.WxLoginRequest;
 import com.miribar.ordering.entity.Customer;
 import com.miribar.ordering.mapper.CustomerMapper;
 import com.miribar.ordering.service.CaptchaService;
+import com.miribar.ordering.service.MiniAppAuthService;
 import com.miribar.ordering.service.SmsCodeService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -26,13 +28,25 @@ public class CustomerAuthController {
     private final CustomerMapper customerMapper;
     private final JwtUtil jwtUtil;
     private final CaptchaService captchaService;
+    private final MiniAppAuthService miniAppAuthService;
 
     public CustomerAuthController(SmsCodeService smsCodeService, CustomerMapper customerMapper,
-                                  JwtUtil jwtUtil, CaptchaService captchaService) {
+                                  JwtUtil jwtUtil, CaptchaService captchaService,
+                                  MiniAppAuthService miniAppAuthService) {
         this.smsCodeService = smsCodeService;
         this.customerMapper = customerMapper;
         this.jwtUtil = jwtUtil;
         this.captchaService = captchaService;
+        this.miniAppAuthService = miniAppAuthService;
+    }
+
+    /**
+     * 小程序静默登录：wx.login 的 code 换取 openid，查/建 t_customer，签发顾客 JWT。
+     * 无需图形验证码与短信（code 一次性且 5 分钟有效，由微信侧保证）。
+     */
+    @PostMapping("/wx-login")
+    public Result<CustomerVO> wxLogin(@Valid @RequestBody WxLoginRequest request) {
+        return Result.success(miniAppAuthService.wxLogin(request.getCode().trim()));
     }
 
     /** 方式一第一步：发送验证码（需图形验证码）；开发模式下返回验证码明文 */

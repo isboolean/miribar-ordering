@@ -28,4 +28,27 @@ public interface DictDataMapper {
     int deleteByDictType(@Param("dictType") String dictType);
     
     List<DictData> selectByKeyword(@Param("keyword") String keyword);
+
+    /**
+     * 分页查询字典数据
+     *
+     * @param dictType  字典类型（可选，为空表示全部类型）
+     * @param dictLabel 标签模糊匹配（可选）
+     * @param dictValue 键值模糊匹配（可选）
+     * @param status    状态（可选）
+     * @param offset    偏移量
+     * @param pageSize  每页条数
+     */
+    List<DictData> selectPage(@Param("dictType") String dictType,
+                              @Param("dictLabel") String dictLabel,
+                              @Param("dictValue") String dictValue,
+                              @Param("status") Integer status,
+                              @Param("offset") int offset,
+                              @Param("pageSize") int pageSize);
+
+    /** 统计满足条件的字典数据总数（与 selectPage 条件一致） */
+    long countByCondition(@Param("dictType") String dictType,
+                          @Param("dictLabel") String dictLabel,
+                          @Param("dictValue") String dictValue,
+                          @Param("status") Integer status);
 }

@@ -3,6 +3,7 @@ package com.miribar.ordering.controller;
 import com.miribar.ordering.common.Result;
 import com.miribar.ordering.entity.DiningTable;
 import com.miribar.ordering.service.TableService;
+import com.miribar.ordering.service.WxaQrService;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -14,9 +15,11 @@ import java.util.Map;
 public class TableController {
 
     private final TableService tableService;
+    private final WxaQrService wxaQrService;
 
-    public TableController(TableService tableService) {
+    public TableController(TableService tableService, WxaQrService wxaQrService) {
         this.tableService = tableService;
+        this.wxaQrService = wxaQrService;
     }
 
     /**
@@ -109,5 +112,23 @@ public class TableController {
                                  @RequestParam(required = false) String remark) {
         tableService.checkout(tableId, discountAmount != null ? discountAmount : BigDecimal.ZERO, remark);
         return Result.success();
+    }
+
+    /**
+     * 生成桌台小程序码（管理端打印桌码用）
+     * scene = qrToken，顾客扫码后由小程序首页解析并调用 /table/qr/{qrToken}
+     *
+     * @param envVersion release-正式 / trial-体验 / develop-开发，默认 release
+     * @return { image: "data:image/png;base64,..." }
+     */
+    @GetMapping("/{tableId}/wxa-qrcode")
+    public Result<Map<String, String>> getWxaQrcode(@PathVariable Long tableId,
+                                                    @RequestParam(required = false) String envVersion) {
+        DiningTable table = tableService.getTableById(tableId);
+        if (table == null) {
+            return Result.error(404, "桌台不存在");
+        }
+        String image = wxaQrService.generateTableQrBase64(table.getQrToken(), envVersion);
+        return Result.success(Map.of("image", image));
     }
 }

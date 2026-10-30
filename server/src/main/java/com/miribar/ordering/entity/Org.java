@@ -9,7 +9,7 @@ public class Org {
     private Long parentId;
     private String orgName;
     private String orgCode;
-    private Integer orgType; // 1=集团 2=省份 3=城市 4=店面
+    private Integer orgType; // 1=集团 2=总部 3=分部 4=区域 5=总部机构 6=省份 7=城市 8=店面
     private String leader;
     private String phone;
     private String address;

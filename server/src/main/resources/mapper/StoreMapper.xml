@@ -6,4 +6,12 @@
         SELECT * FROM t_store WHERE id = #{id}
     </select>
 
+    <select id="selectIdByOrgId" resultType="java.lang.Long">
+        SELECT id FROM t_store WHERE org_id = #{orgId} ORDER BY id LIMIT 1
+    </select>
+
+    <select id="selectFirstId" resultType="java.lang.Long">
+        SELECT id FROM t_store ORDER BY id LIMIT 1
+    </select>
+
 </mapper>

@@ -16,8 +16,8 @@
       <!-- 方式一：账号密码 -->
       <form v-if="tab === 'password'" @submit.prevent="handleLogin">
         <div class="field">
-          <label>账号</label>
-          <input v-model.trim="username" type="text" placeholder="请输入员工账号" autocomplete="username" required />
+          <label>工号</label>
+          <input v-model.trim="username" type="text" placeholder="请输入10位员工工号（管理员用 admin）" autocomplete="username" required />
         </div>
         <div class="field">
           <label>密码</label>
@@ -59,7 +59,7 @@
       </form>
 
       <div class="tips">
-        <p>账号密码：admin / admin123　店长：manager01 / 123456</p>
+        <p>管理员：admin / admin123　员工：10 位工号（如 0000000001）/ 初始密码 123456</p>
         <p>短信登录：13800000001（admin）等，图形/短信验证码开发模式均为 1234</p>
       </div>
     </div>

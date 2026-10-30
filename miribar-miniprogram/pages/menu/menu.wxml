@@ -1,0 +1,130 @@
+<view class="page">
+  <!-- 门店/桌位条：扫码后自动识别，无需顾客选择 -->
+  <view class="store-bar">
+    <view class="store-info">
+      <text class="store-name">{{storeName}}</text>
+      <text class="table-no">{{tableNumber}}</text>
+    </view>
+    <view class="orders-link" bindtap="goOrders">我的订单 ›</view>
+  </view>
+
+  <!-- 加载/错误态 -->
+  <view wx:if="{{loading}}" class="state">加载中…</view>
+  <view wx:elif="{{loadError}}" class="state">
+    <text>{{loadError}}</text>
+    <button size="mini" class="btn-primary retry" bindtap="loadMenu">重试</button>
+  </view>
+
+  <!-- 主体：左分类 + 右商品 -->
+  <view wx:else class="main">
+    <scroll-view class="side" scroll-y>
+      <view
+        wx:for="{{categories}}"
+        wx:key="id"
+        class="side-item {{activeIndex === index ? 'active' : ''}}"
+        data-index="{{index}}"
+        bindtap="onCategoryTap"
+      >{{item.name}}</view>
+    </scroll-view>
+
+    <scroll-view class="list" scroll-y>
+      <block wx:for="{{groups}}" wx:for-item="group" wx:for-index="groupIndex" wx:key="categoryId">
+        <view id="{{group.anchor}}" class="group-title">{{group.categoryName}}</view>
+
+        <view
+          wx:for="{{group.products}}"
+          wx:for-item="p"
+          wx:for-index="index"
+          wx:key="productId"
+          class="product card {{p.anyAvailable ? '' : 'sold-out'}}"
+          data-group-index="{{groupIndex}}"
+          data-index="{{index}}"
+          bindtap="onProductTap"
+        >
+          <image wx:if="{{p.image}}" class="product-img" src="{{p.image}}" mode="aspectFill" lazy-load />
+          <view wx:else class="product-img placeholder">🍻</view>
+          <view class="product-info">
+            <view class="product-name">
+              {{p.name}}
+              <text wx:if="{{p.isAlcohol}}" class="tag tag-hot">含酒精</text>
+              <text wx:for="{{p.tags}}" wx:for-item="t" wx:key="*this" class="tag {{t === '热门' ? 'tag-hot' : 'tag-new'}}">{{t}}</text>
+            </view>
+            <view class="product-desc">{{p.description}}</view>
+            <view class="product-bottom">
+              <text class="price">{{p.priceLabel}}</text>
+              <view class="add-btn {{p.anyAvailable ? '' : 'disabled'}}">＋</view>
+            </view>
+          </view>
+        </view>
+      </block>
+      <view class="list-footer">· 已展示全部 ·</view>
+    </scroll-view>
+  </view>
+
+  <!-- 规格选择弹窗 -->
+  <view wx:if="{{skuPopup}}" class="mask" bindtap="onSkuClose">
+    <view class="sku-popup card" catchtap>
+      <view class="sku-title">{{skuPopup.name}}</view>
+      <view
+        wx:for="{{skuPopup.skus}}"
+        wx:for-item="sku"
+        wx:key="id"
+        class="sku-item {{sku.available ? '' : 'disabled'}}"
+        data-index="{{index}}"
+        bindtap="onSkuSelect"
+      >
+        <text>{{sku.skuName}}</text>
+        <text class="price">{{sku.price}} 元</text>
+        <text wx:if="{{!sku.available}}" class="sku-soldout">售罄</text>
+      </view>
+      <view class="sku-cancel" bindtap="onSkuClose">取消</view>
+    </view>
+  </view>
+
+  <!-- 购物车明细弹层 -->
+  <view wx:if="{{showCart}}" class="mask" bindtap="onCartClose">
+    <view class="cart-popup safe-area-bottom" catchtap>
+      <view class="cart-head">
+        <text>已选商品（{{cartCount}}）</text>
+        <text class="cart-clear" bindtap="onCartClear">🗑 清空</text>
+      </view>
+      <scroll-view scroll-y class="cart-list">
+        <view wx:for="{{cartItems}}" wx:key="skuId" class="cart-item">
+          <view class="cart-item-info">
+            <view class="cart-item-name">{{item.productName}}</view>
+            <view class="cart-item-sku">{{item.skuName}}</view>
+            <input
+              class="cart-item-remark"
+              placeholder="单品备注，如：少冰"
+              value="{{item.remark}}"
+              data-sku-id="{{item.skuId}}"
+              bindblur="onItemRemark"
+            />
+          </view>
+          <view class="cart-item-right">
+            <text class="price">{{item.unitPrice}}</text>
+            <view class="stepper">
+              <view class="stepper-btn minus" data-sku-id="{{item.skuId}}" bindtap="onCartMinus">−</view>
+              <text class="stepper-num">{{item.quantity}}</text>
+              <view class="stepper-btn" data-sku-id="{{item.skuId}}" bindtap="onCartPlus">＋</view>
+            </view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <!-- 底部购物车栏 -->
+  <view class="cart-bar safe-area-bottom" wx:if="{{!loading && !loadError}}">
+    <view class="cart-bar-left" bindtap="onCartBarTap">
+      <view class="cart-icon">
+        🛒
+        <view wx:if="{{cartCount > 0}}" class="cart-badge">{{cartCount}}</view>
+      </view>
+      <text class="cart-amount price">¥{{cartAmount}}</text>
+    </view>
+    <button class="checkout-btn btn-primary {{cartCount === 0 ? 'disabled' : ''}}" disabled="{{cartCount === 0}}" bindtap="goConfirm">
+      去下单
+    </button>
+  </view>
+</view>

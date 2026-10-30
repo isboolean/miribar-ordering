@@ -54,5 +54,32 @@
            OR remark LIKE CONCAT('%', #{keyword}, '%')
         ORDER BY id
     </select>
+
+    <!-- 字典类型列表公共条件，分页查询与总数统计复用 -->
+    <sql id="dictTypeConditions">
+        <where>
+            <if test="dictName != null and dictName != ''">
+                AND dict_name LIKE CONCAT('%', #{dictName}, '%')
+            </if>
+            <if test="dictType != null and dictType != ''">
+                AND dict_type LIKE CONCAT('%', #{dictType}, '%')
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectPage" resultMap="DictTypeResult">
+        SELECT * FROM t_dict_type
+        <include refid="dictTypeConditions"/>
+        ORDER BY id
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="countByCondition" resultType="long">
+        SELECT COUNT(1) FROM t_dict_type
+        <include refid="dictTypeConditions"/>
+    </select>
     
 </mapper>

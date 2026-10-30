@@ -1,0 +1,67 @@
+<view class="page">
+  <!-- 桌位确认条 -->
+  <view class="table-bar card">
+    <text class="tb-label">下单桌位</text>
+    <text class="tb-value">{{tableNumber || '已扫码自动识别'}}</text>
+  </view>
+
+  <!-- 商品清单 -->
+  <view class="card section">
+    <view class="section-title">商品清单（{{totalCount}}）</view>
+    <view wx:for="{{items}}" wx:key="skuId" class="order-item">
+      <view class="oi-info">
+        <view class="oi-name">{{item.productName}}</view>
+        <view class="oi-sku">{{item.skuName}}</view>
+        <input
+          class="oi-remark"
+          placeholder="单品备注，如：少冰 / 不加香菜"
+          value="{{item.remark}}"
+          data-sku-id="{{item.skuId}}"
+          bindblur="onItemRemark"
+        />
+      </view>
+      <view class="oi-right">
+        <text class="price">{{item.unitPriceLabel}}</text>
+        <view class="stepper">
+          <view class="stepper-btn minus" data-sku-id="{{item.skuId}}" bindtap="onMinus">−</view>
+          <text class="stepper-num">{{item.quantity}}</text>
+        </view>
+      </view>
+    </view>
+    <view wx:if="{{items.length === 0}}" class="empty">
+      购物车是空的
+      <view class="empty-link" bindtap="goBackMenu">去加点东西 ›</view>
+    </view>
+  </view>
+
+  <!-- 整单备注 -->
+  <view class="card section">
+    <view class="section-title">整单备注</view>
+    <textarea
+      class="remark-input"
+      placeholder="口味偏好、上餐时间等（选填）"
+      value="{{remark}}"
+      maxlength="200"
+      auto-height
+      bindinput="onRemarkInput"
+    />
+  </view>
+
+  <!-- 支付方式提示 -->
+  <view class="pay-tip">
+    支付方式：{{paymentModeLabel}}（下单不扣款，离场时按桌统一结账）
+  </view>
+
+  <!-- 底部提交栏 -->
+  <view class="submit-bar safe-area-bottom">
+    <view class="total">
+      <text>合计 </text>
+      <text class="price total-price">¥{{totalAmount}}</text>
+    </view>
+    <button
+      class="submit-btn btn-primary"
+      disabled="{{submitting || totalCount === 0}}"
+      bindtap="onSubmit"
+    >{{submitting ? '提交中…' : '提交订单'}}</button>
+  </view>
+</view>

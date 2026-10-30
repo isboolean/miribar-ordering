@@ -1,0 +1,49 @@
+<view class="page">
+  <!-- 桌位条 + 桌台账单合计 -->
+  <view class="table-bar card">
+    <view>
+      <view class="tb-table">{{tableNumber}}</view>
+      <view wx:if="{{billTotal}}" class="tb-bill">本桌账单合计（未结账）：<text class="price">{{billTotal}}</text></view>
+    </view>
+    <button size="mini" class="add-btn btn-primary" bindtap="onAddOrder">＋ 加单</button>
+  </view>
+
+  <view wx:if="{{loading}}" class="state">加载中…</view>
+
+  <view wx:else class="orders">
+    <view
+      wx:for="{{orders}}"
+      wx:key="id"
+      class="order card {{highlightId === item.id ? 'highlight' : ''}}"
+    >
+      <view class="order-head">
+        <text class="order-no">#{{item.orderNo}}</text>
+        <text class="order-status {{item.statusCls}}">{{item.statusText}}</text>
+      </view>
+      <view class="order-time">{{item.time}}</view>
+      <view class="order-items">
+        <view wx:for="{{item.items}}" wx:for-item="it" wx:key="index" class="order-item-line">
+          {{it.label}}
+        </view>
+      </view>
+      <view wx:if="{{item.remark}}" class="order-remark">备注：{{item.remark}}</view>
+      <view class="order-foot">
+        <text class="price">{{item.total}}</text>
+        <button
+          wx:if="{{item.canCancel}}"
+          size="mini"
+          class="cancel-btn"
+          data-id="{{item.id}}"
+          bindtap="onCancelTap"
+        >取消订单</button>
+      </view>
+    </view>
+
+    <view wx:if="{{orders.length === 0}}" class="state">
+      <text>本桌还没有订单</text>
+      <button size="mini" class="btn-primary" bindtap="onAddOrder">去点餐</button>
+    </view>
+  </view>
+
+  <view class="poll-tip">订单状态每 15 秒自动刷新 · 也可下拉手动刷新</view>
+</view>

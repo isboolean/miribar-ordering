@@ -1,0 +1,22 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/menu/menu",
+    "pages/confirm/confirm",
+    "pages/orders/orders",
+    "pages/login/login"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#1f1f2e",
+    "navigationBarTitleText": "MiriBar 扫码点餐",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#f6f6f8",
+    "backgroundTextStyle": "dark"
+  },
+  "permission": {},
+  "requiredPrivateInfos": [],
+  "usingComponents": {},
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents",
+  "style": "v2"
+}

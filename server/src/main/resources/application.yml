@@ -23,3 +23,11 @@ mybatis:
 logging:
   level:
     com.miribar.ordering: info
+
+# 微信小程序配置（顾客端）
+# app-secret 属敏感信息：生产环境建议用环境变量或配置中心注入，不要提交到代码库
+wx:
+  miniapp:
+    dev-mode: true                    # 开发者模式：跳过微信登录校验，用本地固定身份联调。上线前改 false 并配置正式 app-id/app-secret
+    app-id: your-miniapp-appid        # 替换为小程序 AppID
+    app-secret: your-miniapp-secret   # 替换为小程序 AppSecret（建议用环境变量注入，勿提交代码库）

@@ -3,7 +3,7 @@
     <header class="header">
       <h1>MiriBar 管理后台</h1>
       <div class="header-user">
-        <span style="font-size:13px;opacity:.8">{{ auth.displayName }} | {{ roleText }}</span>
+        <span class="header-user-info">{{ auth.displayName }} | {{ roleText }}</span>
         <button class="btn btn-outline btn-sm" @click="handleLogout">退出登录</button>
       </div>
     </header>
@@ -89,11 +89,17 @@
             <h2>📂 分类管理</h2>
             <button class="btn btn-primary" @click="openCategoryModal()">+ 新增分类</button>
           </div>
+          <SearchFilterBar
+            :fields="categorySearchFields"
+            :model="categoryFilters"
+            @search="loadCategories"
+            @reset="resetCategoryFilters"
+          />
           <table class="data-table">
             <thead><tr><th>图标</th><th>名称</th><th>排序</th><th>状态</th><th>操作</th></tr></thead>
             <tbody>
-              <tr v-for="c in categories" :key="c.id">
-                <td style="font-size:20px">{{ c.icon }}</td>
+              <tr v-for="c in filteredCategories" :key="c.id">
+                <td class="icon-cell">{{ c.icon }}</td>
                 <td>{{ c.name }}</td>
                 <td>{{ c.sortOrder }}</td>
                 <td><span class="badge" :class="c.status === 1 ? 'badge-success' : 'badge-danger'">{{ c.status === 1 ? '启用' : '禁用' }}</span></td>
@@ -102,7 +108,7 @@
                   <button class="btn btn-danger btn-sm" @click="handleDeleteCategory(c.id)">删除</button>
                 </td>
               </tr>
-              <tr v-if="categories.length === 0"><td colspan="5" class="empty-row">暂无分类</td></tr>
+              <tr v-if="filteredCategories.length === 0"><td colspan="5" class="empty-row">{{ categories.length === 0 ? '暂无分类' : '无匹配的分类' }}</td></tr>
             </tbody>
           </table>
         </div>
@@ -112,12 +118,23 @@
             <h2>📦 商品管理</h2>
             <button class="btn btn-primary" @click="openProductModal()">+ 新增商品</button>
           </div>
+          <SearchFilterBar
+            :fields="productSearchFields"
+            :model="productFilters"
+            @search="loadProducts"
+            @reset="resetProductFilters"
+          />
           <table class="data-table">
             <thead><tr><th>商品名称</th><th>分类</th><th>类型</th><th>标签</th><th>规格/价格</th><th>状态</th><th>操作</th></tr></thead>
             <tbody>
-              <template v-for="group in products" :key="group.category.id">
+              <template v-for="group in filteredProducts" :key="group.category.id">
                 <tr v-for="p in group.products" :key="p.product.id">
-                  <td><strong>{{ p.product.name }}</strong></td>
+                  <td>
+                    <div class="product-name-cell">
+                      <img v-if="p.product.imageUrl" class="product-thumb" :src="p.product.imageUrl" :alt="p.product.name" loading="lazy" @error="$event.target.style.display='none'">
+                      <strong>{{ p.product.name }}</strong>
+                    </div>
+                  </td>
                   <td>{{ group.category.name }}</td>
                   <td>{{ typeMap[p.product.productType] || '酒水' }}</td>
                   <td>{{ p.product.tags || '-' }}</td>
@@ -129,7 +146,7 @@
                   </td>
                 </tr>
               </template>
-              <tr v-if="products.length === 0"><td colspan="7" class="empty-row">暂无商品</td></tr>
+              <tr v-if="filteredProducts.length === 0"><td colspan="7" class="empty-row">{{ products.length === 0 ? '暂无商品' : '无匹配的商品' }}</td></tr>
             </tbody>
           </table>
         </div>
@@ -139,16 +156,23 @@
             <h2>💰 结账管理</h2>
             <button class="btn btn-outline" @click="loadBills">🔄 刷新</button>
           </div>
+          <SearchFilterBar
+            :fields="checkoutSearchFields"
+            :model="checkoutFilters"
+            @search="loadBills"
+            @reset="resetCheckoutFilters"
+          />
           <div v-if="bills.length === 0" class="empty-state"><div class="icon">💰</div>暂无开台的桌台</div>
-          <div v-for="bill in bills" :key="bill.table.id" class="bill-card">
+          <div v-else-if="filteredBills.length === 0" class="empty-state"><div class="icon">🔍</div>无匹配的账单</div>
+          <div v-for="bill in filteredBills" :key="bill.table.id" class="bill-card">
             <div class="bill-header">
               <div>
                 <span class="bill-table">🪑 {{ bill.table.tableNumber }}</span>
-                <span class="badge badge-warning" style="margin-left:8px">{{ bill.orderCount || 0 }}单</span>
+                <span class="badge badge-warning bill-badge">{{ bill.orderCount || 0 }}单</span>
               </div>
-              <div style="text-align:right">
+              <div class="bill-right">
                 <div class="bill-total">¥{{ bill.totalAmount }}</div>
-                <button class="btn btn-success" style="margin-top:6px" @click="handleCheckout(bill.table.id)">💰 结账</button>
+                <button class="btn btn-success bill-checkout" @click="handleCheckout(bill.table.id)">💰 结账</button>
               </div>
             </div>
             <div v-for="od in bill.orders" :key="od.order.id" class="bill-order">
@@ -167,12 +191,111 @@
         <div v-else class="empty-state">
           <div class="icon">👋</div>
           <p>欢迎使用 MiriBar 管理后台</p>
-          <p style="font-size:13px;color:#999">请从左侧菜单选择功能</p>
+          <p class="hint-text">请从左侧菜单选择功能</p>
         </div>
       </main>
     </div>
 
-    <!-- 省略原有的 Modal 代码，保持简洁 -->
+    <!-- 桌台弹窗 -->
+    <div v-if="tableModal.show" class="modal-overlay" @click.self="tableModal.show = false">
+      <div class="modal-box">
+        <h3>{{ tableModal.id ? '编辑桌台' : '新增桌台' }}</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">桌号</label>
+            <input class="form-input" v-model="tableModal.tableNumber" placeholder="如 A01" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">座位数</label>
+            <input class="form-input" type="number" min="1" v-model.number="tableModal.seats" />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" @click="tableModal.show = false">取消</button>
+          <button class="btn btn-primary" @click="handleSaveTable">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 分类弹窗 -->
+    <div v-if="categoryModal.show" class="modal-overlay" @click.self="categoryModal.show = false">
+      <div class="modal-box">
+        <h3>{{ categoryModal.id ? '编辑分类' : '新增分类' }}</h3>
+        <div class="form-group">
+          <label class="form-label">分类名称</label>
+          <input class="form-input" v-model="categoryModal.name" placeholder="如 精酿啤酒" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">图标（emoji）</label>
+            <input class="form-input" v-model="categoryModal.icon" placeholder="如 🍺" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">排序值</label>
+            <input class="form-input" type="number" v-model.number="categoryModal.sortOrder" />
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" @click="categoryModal.show = false">取消</button>
+          <button class="btn btn-primary" @click="handleSaveCategory">保存</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 商品弹窗 -->
+    <div v-if="productModal.show" class="modal-overlay" @click.self="productModal.show = false">
+      <div class="modal-box">
+        <h3>新增商品</h3>
+        <div class="form-group">
+          <label class="form-label">商品名称</label>
+          <input class="form-input" v-model="productModal.name" placeholder="如 精酿IPA" />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">所属分类</label>
+            <select class="form-input" v-model="productModal.categoryId">
+              <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">商品类型</label>
+            <select class="form-input" v-model.number="productModal.productType">
+              <option v-for="(label, val) in typeMap" :key="val" :value="Number(val)">{{ label }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">商品描述</label>
+          <textarea class="form-input" v-model="productModal.description" rows="2" placeholder="口味、产地、酒精度等（选填）"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">标签（逗号分隔）</label>
+            <input class="form-input" v-model="productModal.tags" placeholder="如 热门,新品" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">含酒精</label>
+            <select class="form-input" v-model.number="productModal.containsAlcohol">
+              <option :value="1">是</option>
+              <option :value="0">否</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">图片 URL</label>
+          <input class="form-input" v-model="productModal.imageUrl" placeholder="https://...（选填，顾客端展示商品图）" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">规格（名称:价格:库存，多规格用 ; 分隔）</label>
+          <textarea class="form-input" v-model="productModal.skuStr" rows="2" placeholder="如: 中杯:28:50;大杯:32:50"></textarea>
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-outline" @click="productModal.show = false">取消</button>
+          <button class="btn btn-primary" @click="handleSaveProduct">保存</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Toast -->
     <div v-if="toast" class="toast-container"><div class="toast-msg">{{ toast }}</div></div>
   </div>
@@ -182,6 +305,7 @@
 import { ref, reactive, computed, onMounted, markRaw, defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import SearchFilterBar from '@/components/SearchFilterBar.vue'
 import {
   getTables, addTable, updateTable, deleteTable, clearTable,
   adminGetCategories, adminAddCategory, adminUpdateCategory, adminDeleteCategory,
@@ -274,10 +398,125 @@ const products = ref([])
 const bills = ref([])
 const toast = ref('')
 
+// ========== 分类搜索 ==========
+const categoryFilters = reactive({ name: '', status: '' })
+const categorySearchFields = [
+  { key: 'name', label: '分类名称', placeholder: '按分类名称搜索' },
+  {
+    key: 'status', label: '状态', type: 'select',
+    options: [
+      { label: '全部', value: '' },
+      { label: '启用', value: 1 },
+      { label: '禁用', value: 0 }
+    ]
+  }
+]
+const filteredCategories = computed(() => {
+  const name = categoryFilters.name.trim().toLowerCase()
+  return categories.value.filter(c => {
+    if (name && !(c.name || '').toLowerCase().includes(name)) return false
+    if (categoryFilters.status !== '' && c.status !== categoryFilters.status) return false
+    return true
+  })
+})
+function resetCategoryFilters() {
+  categoryFilters.name = ''
+  categoryFilters.status = ''
+}
+
+// ========== 商品搜索 ==========
+const productFilters = reactive({ name: '', categoryId: '', productType: '', priceMin: '', priceMax: '', status: '' })
+const productSearchFields = computed(() => [
+  { key: 'name', label: '商品名称', placeholder: '按商品名称搜索' },
+  {
+    key: 'categoryId', label: '分类', type: 'select',
+    options: [{ label: '全部', value: '' }, ...categories.value.map(c => ({ label: c.name, value: c.id }))]
+  },
+  {
+    key: 'productType', label: '类型', type: 'select',
+    options: [{ label: '全部', value: '' }, ...Object.entries(typeMap).map(([val, label]) => ({ label, value: Number(val) }))]
+  },
+  { key: 'price', label: '价格区间', type: 'number-range', minKey: 'priceMin', maxKey: 'priceMax', minPlaceholder: '最低价', maxPlaceholder: '最高价' },
+  {
+    key: 'status', label: '状态', type: 'select',
+    options: [
+      { label: '全部', value: '' },
+      { label: '上架', value: 1 },
+      { label: '下架', value: 0 }
+    ]
+  }
+])
+const filteredProducts = computed(() => {
+  const name = productFilters.name.trim().toLowerCase()
+  const hasProductFilter = name !== '' || productFilters.productType !== '' ||
+    productFilters.priceMin !== '' || productFilters.priceMax !== '' || productFilters.status !== ''
+  return products.value
+    .filter(group => productFilters.categoryId === '' || group.category.id === productFilters.categoryId)
+    .map(group => {
+      if (!hasProductFilter) return group
+      const list = group.products.filter(({ product, skus }) => {
+        if (name && !(product.name || '').toLowerCase().includes(name)) return false
+        if (productFilters.productType !== '' && product.productType !== productFilters.productType) return false
+        if (productFilters.status !== '' && product.status !== productFilters.status) return false
+        if (productFilters.priceMin !== '' || productFilters.priceMax !== '') {
+          const min = productFilters.priceMin === '' ? -Infinity : Number(productFilters.priceMin)
+          const max = productFilters.priceMax === '' ? Infinity : Number(productFilters.priceMax)
+          const prices = (skus || []).map(s => Number(s.price)).filter(v => !Number.isNaN(v))
+          if (!prices.some(p => p >= min && p <= max)) return false
+        }
+        return true
+      })
+      return { ...group, products: list }
+    })
+    .filter(group => group.products.length > 0)
+})
+function resetProductFilters() {
+  productFilters.name = ''
+  productFilters.categoryId = ''
+  productFilters.productType = ''
+  productFilters.priceMin = ''
+  productFilters.priceMax = ''
+  productFilters.status = ''
+}
+
+// ========== 结账搜索 ==========
+const checkoutFilters = reactive({ tableNumber: '', orderNo: '', productName: '' })
+const checkoutSearchFields = [
+  { key: 'tableNumber', label: '桌号', placeholder: '按桌号搜索' },
+  { key: 'orderNo', label: '订单号', placeholder: '按订单号搜索' },
+  { key: 'productName', label: '商品名称', placeholder: '按商品名称搜索' }
+]
+const filteredBills = computed(() => {
+  const tableNo = checkoutFilters.tableNumber.trim().toLowerCase()
+  const orderNo = checkoutFilters.orderNo.trim().toLowerCase()
+  const productName = checkoutFilters.productName.trim().toLowerCase()
+  if (!tableNo && !orderNo && !productName) return bills.value
+  return bills.value
+    .map(bill => {
+      if (tableNo && !(bill.table?.tableNumber || '').toLowerCase().includes(tableNo)) return null
+      if (!orderNo && !productName) return bill
+      const orders = (bill.orders || [])
+        .map(od => {
+          if (orderNo && !(od.order?.orderNo || '').toLowerCase().includes(orderNo)) return null
+          if (!productName) return od
+          const items = (od.items || []).filter(it => (it.productName || '').toLowerCase().includes(productName))
+          return items.length > 0 ? { ...od, items } : null
+        })
+        .filter(Boolean)
+      return orders.length > 0 ? { ...bill, orders } : null
+    })
+    .filter(Boolean)
+})
+function resetCheckoutFilters() {
+  checkoutFilters.tableNumber = ''
+  checkoutFilters.orderNo = ''
+  checkoutFilters.productName = ''
+}
+
 // Modals
 const tableModal = reactive({ show: false, id: null, tableNumber: '', seats: 4 })
 const categoryModal = reactive({ show: false, id: null, name: '', icon: '', sortOrder: 0 })
-const productModal = reactive({ show: false, name: '', categoryId: null, productType: 0, description: '', tags: '', containsAlcohol: 1, skuStr: '' })
+const productModal = reactive({ show: false, name: '', categoryId: null, productType: 0, description: '', tags: '', containsAlcohol: 1, imageUrl: '', skuStr: '' })
 
 // ========== Tables ==========
 async function loadTables() { tables.value = await getTables(STORE_ID).catch(() => []) }
@@ -353,6 +592,7 @@ async function loadProducts() { products.value = await adminGetProducts(STORE_ID
 function openProductModal() {
   productModal.name = ''; productModal.description = ''; productModal.tags = ''
   productModal.productType = 0; productModal.containsAlcohol = 1; productModal.skuStr = ''
+  productModal.imageUrl = ''
   if (categories.value.length > 0) productModal.categoryId = categories.value[0].id
   productModal.show = true
 }
@@ -369,7 +609,8 @@ async function handleSaveProduct() {
       product: {
         storeId: STORE_ID, categoryId: productModal.categoryId, name: productModal.name,
         description: productModal.description, productType: productModal.productType,
-        tags: productModal.tags, containsAlcohol: productModal.containsAlcohol, status: 1
+        tags: productModal.tags, containsAlcohol: productModal.containsAlcohol,
+        imageUrl: productModal.imageUrl.trim(), status: 1
       },
       skus
     })
@@ -428,7 +669,15 @@ onMounted(() => {
   border-bottom: 1px solid var(--border);
   padding: 14px 24px; display: flex; align-items: center; justify-content: space-between;
 }
-.header h1 { font-size: 18px; font-weight: 600; }
+.header h1 { font-size: var(--font-xl); font-weight: 600; }
+.header-user-info { font-size: var(--font-sm); opacity: .8; }
+.icon-cell { font-size: var(--font-2xl); }
+.hint-text { font-size: var(--font-sm); color: var(--text-muted); }
+.bill-badge { margin-left: var(--space-2); }
+.bill-right { text-align: right; }
+.bill-checkout { margin-top: 6px; }
+.product-name-cell { display: flex; align-items: center; gap: 8px; }
+.product-thumb { width: 32px; height: 32px; border-radius: var(--radius-sm); object-fit: cover; flex-shrink: 0; background: var(--surface-2); }
 
 .layout { display: flex; min-height: calc(100vh - 56px); }
 .sidebar { 

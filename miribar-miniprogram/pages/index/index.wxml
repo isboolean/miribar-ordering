@@ -1,0 +1,42 @@
+<view class="page">
+  <!-- 顶部品牌区 -->
+  <view class="hero">
+    <view class="hero-title">MiriBar</view>
+    <view class="hero-sub">扫码即点 · 无需下载</view>
+  </view>
+
+  <!-- 待扫码 -->
+  <view wx:if="{{status === 'idle' || status === 'error'}}" class="body">
+    <view wx:if="{{status === 'error'}}" class="error card">
+      <text class="error-icon">⚠️</text>
+      <text class="error-text">{{errorMsg}}</text>
+    </view>
+
+    <button class="scan-btn btn-primary" bindtap="onScanTap">📷 扫桌台码点餐</button>
+
+    <view class="resume" bindtap="onResumeTap">继续上次桌位点餐</view>
+    <view class="resume" bindtap="goOrders">查看我的订单</view>
+
+    <view class="tips">
+      <view class="tips-title">如何点餐</view>
+      <view class="tips-item">1. 打开微信扫描桌台上的点餐二维码</view>
+      <view class="tips-item">2. 浏览菜单加入购物车</view>
+      <view class="tips-item">3. 提交订单，吧台/后厨即刻接单</view>
+    </view>
+  </view>
+
+  <!-- 解析中 -->
+  <view wx:elif="{{status === 'loading'}}" class="body center">
+    <view class="loading-dot"></view>
+    <text class="loading-text">正在识别桌台…</text>
+  </view>
+
+  <!-- 跳转中 -->
+  <view wx:elif="{{status === 'ok'}}" class="body center">
+    <text class="ok-text">✅ {{tableLabel}}</text>
+    <text class="loading-text">正在进入菜单…</text>
+  </view>
+
+  <!-- 合规提示（酒吧场景必备） -->
+  <view class="compliance">未成年人禁止饮酒 · 理性饮酒</view>
+</view>

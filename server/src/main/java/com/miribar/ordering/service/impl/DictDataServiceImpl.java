@@ -1,5 +1,7 @@
 package com.miribar.ordering.service.impl;
 
+import com.miribar.ordering.common.PageQuery;
+import com.miribar.ordering.common.PageResult;
 import com.miribar.ordering.entity.DictData;
 import com.miribar.ordering.mapper.DictDataMapper;
 import com.miribar.ordering.service.DictDataService;
@@ -30,6 +32,18 @@ public class DictDataServiceImpl implements DictDataService {
     @Override
     public List<DictData> listEnabled() {
         return dictDataMapper.selectByStatus(1);
+    }
+
+    @Override
+    public PageResult<DictData> page(String dictType, String dictLabel, String dictValue, Integer status,
+                                     int page, int pageSize) {
+        long total = dictDataMapper.countByCondition(dictType, dictLabel, dictValue, status);
+        if (total == 0) {
+            return PageResult.empty(0, page, pageSize);
+        }
+        List<DictData> rows = dictDataMapper.selectPage(dictType, dictLabel, dictValue, status,
+                PageQuery.offset(page, pageSize), pageSize);
+        return PageResult.of(rows, total, page, pageSize);
     }
     
     @Override

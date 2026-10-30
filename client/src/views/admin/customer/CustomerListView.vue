@@ -3,16 +3,16 @@
     <div class="page-header">
       <h2>客户列表</h2>
       <div class="header-actions">
-        <input 
-          v-model="keyword" 
-          type="text" 
-          placeholder="搜索昵称/手机号/OpenID" 
-          @keyup.enter="loadCustomers"
-          class="search-input"
-        />
         <button class="btn btn-primary" @click="showAddDialog">+ 新增客户</button>
       </div>
     </div>
+
+    <SearchFilterBar
+      :fields="searchFields"
+      :model="filters"
+      @search="handleSearch"
+      @reset="handleReset"
+    />
 
     <table class="data-table">
       <thead>
@@ -53,6 +53,14 @@
       </tbody>
     </table>
 
+    <PaginationBar
+      :total="total"
+      :page="page"
+      :page-size="pageSize"
+      @update:page="handlePageChange"
+      @update:page-size="handlePageSizeChange"
+    />
+
     <!-- 新增/编辑对话框 -->
     <div v-if="dialogVisible" class="dialog-mask" @click.self="closeDialog">
       <div class="dialog">
@@ -85,11 +93,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { getCustomerList, addCustomer, updateCustomer, deleteCustomer } from '@/api'
+import SearchFilterBar from '@/components/SearchFilterBar.vue'
+import PaginationBar from '@/components/PaginationBar.vue'
 
 const customerList = ref([])
-const keyword = ref('')
 const dialogVisible = ref(false)
 const isEdit = ref(false)
 const form = ref({
@@ -100,17 +109,70 @@ const form = ref({
   avatarUrl: ''
 })
 
+// 搜索条件（各条件独立控件，可组合使用）
+const filters = reactive({ nickname: '', phone: '', openid: '' })
+const searchFields = [
+  { key: 'nickname', label: '昵称', placeholder: '按昵称搜索' },
+  { key: 'phone', label: '手机号', placeholder: '按手机号搜索' },
+  { key: 'openid', label: 'OpenID', placeholder: '按OpenID搜索', width: '220px' }
+]
+
+// 分页状态：与后端返回的 total / page / pageSize 保持一致
+const page = ref(1)
+const pageSize = ref(10)
+const total = ref(0)
+
+function resetFilters() {
+  filters.nickname = ''
+  filters.phone = ''
+  filters.openid = ''
+}
+
 async function loadCustomers() {
+  const params = {
+    page: page.value,
+    pageSize: pageSize.value,
+    nickname: filters.nickname.trim(),
+    phone: filters.phone.trim(),
+    openid: filters.openid.trim()
+  }
   try {
-    const params = {}
-    if (keyword.value.trim()) {
-      params.keyword = keyword.value.trim()
+    const result = await getCustomerList(params)
+    customerList.value = result.list || []
+    total.value = result.total || 0
+    // 删除后当前页无数据时自动回退一页
+    if (customerList.value.length === 0 && total.value > 0 && page.value > 1) {
+      page.value = page.value - 1
+      await loadCustomers()
     }
-    customerList.value = await getCustomerList(params)
   } catch (e) {
     console.error('加载客户列表失败:', e)
     customerList.value = []
+    total.value = 0
   }
+}
+
+// 查询条件变化后回到第一页
+function handleSearch() {
+  page.value = 1
+  loadCustomers()
+}
+
+function handleReset() {
+  resetFilters()
+  page.value = 1
+  loadCustomers()
+}
+
+function handlePageChange(target) {
+  page.value = target
+  loadCustomers()
+}
+
+function handlePageSizeChange(size) {
+  pageSize.value = size
+  page.value = 1
+  loadCustomers()
 }
 
 function showAddDialog() {
@@ -143,6 +205,8 @@ async function handleSubmit() {
     } else {
       await addCustomer(form.value)
       alert('新增成功')
+      // 客户按注册时间倒序，新客户在第一页
+      page.value = 1
     }
     closeDialog()
     loadCustomers()
@@ -204,7 +268,7 @@ onMounted(() => {
 
 .search-input {
   padding: 8px 12px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--border);
   border-radius: 4px;
   width: 250px;
 }
@@ -212,25 +276,25 @@ onMounted(() => {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  background: #fff;
+  background: var(--card-bg);
 }
 
 .data-table th,
 .data-table td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid #eee;
+  border-bottom: 1px solid var(--border);
 }
 
 .data-table th {
-  background: #fafafa;
+  background: var(--surface-2);
   font-weight: 600;
 }
 
 .empty-row {
   text-align: center;
   padding: 40px !important;
-  color: #999;
+  color: var(--text-muted);
 }
 
 .avatar {
@@ -241,7 +305,7 @@ onMounted(() => {
 }
 
 .openid {
-  background: #f5f5f5;
+  background: var(--surface-2);
   padding: 2px 6px;
   border-radius: 3px;
   font-family: monospace;
@@ -250,37 +314,37 @@ onMounted(() => {
 
 .btn {
   padding: 6px 16px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--border);
   border-radius: 4px;
   cursor: pointer;
-  background: #fff;
+  background: var(--card-bg);
 }
 
 .btn-primary {
-  background: #1890ff;
+  background: var(--primary);
   color: #fff;
-  border-color: #1890ff;
+  border-color: var(--primary);
 }
 
 .btn-icon {
   background: none;
   border: none;
-  color: #1890ff;
+  color: var(--primary);
   cursor: pointer;
   padding: 4px 8px;
   font-size: 13px;
 }
 
 .btn-icon:hover {
-  color: #40a9ff;
+  color: var(--primary-light);
 }
 
 .btn-icon.btn-danger {
-  color: #f5222d;
+  color: var(--danger);
 }
 
 .btn-icon.btn-danger:hover {
-  color: #ff4d4f;
+  color: var(--danger);
 }
 
 .dialog-mask {
@@ -297,7 +361,7 @@ onMounted(() => {
 }
 
 .dialog {
-  background: #fff;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 24px;
   min-width: 450px;
@@ -322,7 +386,7 @@ onMounted(() => {
 .form-item input {
   width: 100%;
   padding: 8px 12px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--border);
   border-radius: 4px;
   font-size: 14px;
 }

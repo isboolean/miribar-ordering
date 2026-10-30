@@ -1,0 +1,37 @@
+.page { padding: 48rpx 40rpx; }
+
+.head { margin-bottom: 40rpx; }
+.head-title { font-size: 48rpx; font-weight: 800; }
+.head-sub { margin-top: 12rpx; font-size: 24rpx; color: var(--color-text-secondary); }
+
+.form { padding: 40rpx 32rpx; }
+.field {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+  gap: 16rpx;
+}
+.field-label { width: 180rpx; font-size: 26rpx; color: var(--color-text-secondary); flex-shrink: 0; }
+.field .grow { flex: 1; }
+
+.captcha-img { width: 180rpx; height: 64rpx; border-radius: 8rpx; }
+.captcha-reload { font-size: 22rpx; color: var(--color-primary); }
+
+.sms-btn { border-radius: 999rpx; background: #fff1ec; color: var(--color-primary); }
+.sms-btn.disabled { background: #f0f0f0; color: #c0c0c4; }
+
+.submit {
+  margin-top: 48rpx;
+  height: 92rpx;
+  line-height: 92rpx;
+  font-size: 32rpx;
+}
+
+.agreement {
+  margin-top: 24rpx;
+  font-size: 20rpx;
+  color: #c0c0c4;
+  text-align: center;
+  line-height: 32rpx;
+}

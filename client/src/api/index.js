@@ -14,6 +14,18 @@ function pickToken(kind) {
   return kind === 'customer' ? getCustomerToken() : getToken()
 }
 
+// 组装查询串：自动忽略空值，分页参数与筛选条件统一走这里
+function qs(params = {}) {
+  const search = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      search.append(key, value)
+    }
+  })
+  const query = search.toString()
+  return query ? `?${query}` : ''
+}
+
 function handle401() {
   localStorage.removeItem(TOKEN_KEY)
   localStorage.removeItem('miribar_staff')
@@ -116,7 +128,8 @@ export const updateMenu = (data) => request('/admin/menu', { method: 'PUT', body
 export const deleteMenu = (id) => request(`/admin/menu/${id}`, { method: 'DELETE' })
 
 // ========== 角色管理 ==========
-export const getRoleList = () => request('/admin/role/list')
+// 分页参数：{ page, pageSize, ...筛选条件 }，返回 { list, total, page, pageSize, pages }
+export const getRoleList = (params = {}) => request(`/admin/role/list${qs(params)}`)
 export const getEnabledRoles = () => request('/admin/role/enabled')
 export const getRoleDetail = (id) => request(`/admin/role/${id}`)
 export const addRole = (data) => request('/admin/role', { method: 'POST', body: JSON.stringify(data) })
@@ -130,10 +143,7 @@ export const getUserMenus = () => request('/auth/menu')
 export const getUserPermissions = () => request('/auth/permission')
 
 // ========== 员工管理 ==========
-export const getStaffList = (params = {}) => {
-  const query = new URLSearchParams(params).toString()
-  return request(`/admin/staff/list${query ? '?' + query : ''}`)
-}
+export const getStaffList = (params = {}) => request(`/admin/staff/list${qs(params)}`)
 export const getStaffDetail = (id) => request(`/admin/staff/${id}`)
 export const addStaff = (data) => request('/admin/staff', { method: 'POST', body: JSON.stringify(data) })
 export const updateStaff = (data) => request('/admin/staff', { method: 'PUT', body: JSON.stringify(data) })
@@ -154,7 +164,7 @@ export const getOrgChildren = (id) => request(`/admin/org/${id}/children`)
 export const searchOrg = (keyword) => request(`/admin/org/search?keyword=${encodeURIComponent(keyword)}`)
 
 // ========== 字典类型管理 ==========
-export const getDictTypeList = () => request('/admin/dict/type/list')
+export const getDictTypeList = (params = {}) => request(`/admin/dict/type/list${qs(params)}`)
 export const getEnabledDictTypes = () => request('/admin/dict/type/enabled')
 export const getDictTypeDetail = (id) => request(`/admin/dict/type/${id}`)
 export const getDictTypeByCode = (dictType) => request(`/admin/dict/type/code/${dictType}`)
@@ -164,8 +174,8 @@ export const deleteDictType = (id) => request(`/admin/dict/type/${id}`, { method
 export const searchDictType = (keyword) => request(`/admin/dict/type/search?keyword=${encodeURIComponent(keyword)}`)
 
 // ========== 字典数据管理 ==========
-export const getDictDataList = () => request('/admin/dict/data/list')
-export const getDictDataByType = (dictType) => request(`/admin/dict/data/type/${dictType}`)
+export const getDictDataList = (params = {}) => request(`/admin/dict/data/list${qs(params)}`)
+export const getDictDataByType = (dictType, params = {}) => request(`/admin/dict/data/type/${dictType}${qs(params)}`)
 export const getEnabledDictData = () => request('/admin/dict/data/enabled')
 export const getDictDataDetail = (id) => request(`/admin/dict/data/${id}`)
 export const getDictDataDefault = (dictType) => request(`/admin/dict/data/default/${dictType}`)
@@ -177,10 +187,7 @@ export const deleteDictDataByType = (dictType) => request(`/admin/dict/data/type
 export const searchDictData = (keyword) => request(`/admin/dict/data/search?keyword=${encodeURIComponent(keyword)}`)
 
 // ========== 客户管理 ==========
-export const getCustomerList = (params = {}) => {
-  const query = new URLSearchParams(params).toString()
-  return request(`/admin/customer/list${query ? '?' + query : ''}`)
-}
+export const getCustomerList = (params = {}) => request(`/admin/customer/list${qs(params)}`)
 export const getCustomerDetail = (id) => request(`/admin/customer/${id}`)
 export const addCustomer = (data) => request('/admin/customer', { method: 'POST', body: JSON.stringify(data) })
 export const updateCustomer = (data) => request('/admin/customer', { method: 'PUT', body: JSON.stringify(data) })

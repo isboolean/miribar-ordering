@@ -1,5 +1,7 @@
 package com.miribar.ordering.controller;
 
+import com.miribar.ordering.common.PageQuery;
+import com.miribar.ordering.common.PageResult;
 import com.miribar.ordering.common.Result;
 import com.miribar.ordering.entity.DictType;
 import com.miribar.ordering.service.DictTypeService;
@@ -18,12 +20,34 @@ public class DictTypeController {
     }
     
     /**
-     * 获取字典类型列表
+     * 分页获取字典类型列表
+     *
+     * @param dictName 字典名称（模糊，可选）
+     * @param dictType 字典编码（模糊，可选）
+     * @param status   状态（可选）
+     * @param page     页码，默认 1
+     * @param pageSize 每页条数，默认 10，可选 15 / 30
      */
     @GetMapping("/list")
-    public Result<List<DictType>> list() {
-        List<DictType> types = dictTypeService.listAll();
-        return Result.success(types);
+    public Result<PageResult<DictType>> list(
+            @RequestParam(required = false) String dictName,
+            @RequestParam(required = false) String dictType,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer pageSize) {
+        int current = PageQuery.page(page);
+        int size = PageQuery.pageSize(pageSize);
+        PageResult<DictType> result = dictTypeService.page(
+                trimToNull(dictName), trimToNull(dictType), status, current, size);
+        return Result.success(result);
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
     
     /**

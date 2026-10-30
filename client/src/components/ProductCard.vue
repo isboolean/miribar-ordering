@@ -1,6 +1,16 @@
 <template>
   <div class="product-card" :class="{ 'sold-out': allSoldOut }">
-    <div class="product-img">{{ productEmoji }}</div>
+    <div class="product-img" :class="{ 'img-real': hasImage }">
+      <img
+        v-if="hasImage"
+        :src="product.imageUrl"
+        :alt="product.name"
+        loading="lazy"
+        @error="imgFailed = true"
+      >
+      <span v-else class="img-emoji">{{ productEmoji }}</span>
+      <span v-if="allSoldOut" class="sold-out-badge">已售罄</span>
+    </div>
     <div class="product-info">
       <div class="product-name">
         {{ product.name }}
@@ -18,7 +28,9 @@
         </div>
         <button
           class="add-btn"
+          :class="{ popped: justAdded }"
           :disabled="skus[0]?.soldOut === 1 || skus[0]?.stock <= 0"
+          aria-label="加入购物车"
           @click="handleAdd(skus[0])"
         >+</button>
       </div>
@@ -40,7 +52,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useCartStore } from '@/stores/cart'
 
 const props = defineProps({
@@ -49,6 +61,11 @@ const props = defineProps({
 })
 
 const cart = useCartStore()
+const justAdded = ref(false)
+const imgFailed = ref(false)
+let addedTimer = null
+
+const hasImage = computed(() => !!props.product.imageUrl && !imgFailed.value)
 
 const tags = computed(() => props.product.tags ? props.product.tags.split(',').map(t => t.trim()) : [])
 const allSoldOut = computed(() => props.skus.length > 0 && props.skus.every(s => s.soldOut === 1 || s.stock <= 0))
@@ -66,6 +83,11 @@ function tagClass(tag) {
 function handleAdd(sku) {
   if (!sku || sku.soldOut === 1 || sku.stock <= 0) return
   cart.addItem(sku.id, props.product.name, sku.skuName, sku.price, props.product.productType)
+  // 加购弹跳反馈
+  justAdded.value = false
+  requestAnimationFrame(() => { justAdded.value = true })
+  clearTimeout(addedTimer)
+  addedTimer = setTimeout(() => { justAdded.value = false }, 450)
 }
 </script>
 
@@ -81,9 +103,10 @@ function handleAdd(sku) {
   transition: transform .15s;
 }
 .product-card:active { transform: scale(.98); }
-.product-card.sold-out { opacity: .5; pointer-events: none; }
+.product-card.sold-out { opacity: .55; }
 
 .product-img {
+  position: relative;
   width: 90px; height: 90px;
   border-radius: var(--radius-sm);
   background: var(--surface-2);
@@ -91,6 +114,21 @@ function handleAdd(sku) {
   display: flex; align-items: center; justify-content: center;
   font-size: 36px;
   margin-right: 14px;
+  overflow: hidden;
+}
+.product-img.img-real { background: var(--surface-2); }
+.product-img img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.product-card.sold-out img { opacity: .35; }
+.img-emoji { line-height: 1; }
+.sold-out-badge {
+  position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
+  background: rgba(28, 30, 36, .78); color: #fff;
+  font-size: 10px; font-weight: 500; letter-spacing: 1px;
+  padding: 2px 8px; border-radius: 999px; white-space: nowrap;
 }
 
 .product-info { flex: 1; min-width: 0; }
@@ -105,29 +143,45 @@ function handleAdd(sku) {
 .tag-rec { background: rgba(245,158,11,.12); color: var(--warning); }
 
 .product-bottom { display: flex; align-items: center; justify-content: space-between; }
-.product-price { font-size: 17px; font-weight: 700; color: var(--text); }
-.product-price .yen { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+.product-price { font-size: 17px; font-weight: 700; color: var(--accent); }
+.product-price .yen { font-size: 12px; color: var(--accent); opacity: .75; font-weight: 600; }
 
 .sku-selector { display: flex; gap: 6px; flex-wrap: wrap; }
 .sku-btn {
-  padding: 6px 12px; border-radius: 999px;
+  position: relative;
+  padding: 7px 12px; min-height: 38px; border-radius: 999px;
   border: 1px solid var(--border); background: transparent;
   color: var(--text); font-size: 12px; cursor: pointer;
   transition: border-color .2s, background .2s;
   display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+/* 扩大触控热区 */
+.sku-btn::after {
+  content: ''; position: absolute; inset: -3px; border-radius: 999px;
 }
 .sku-btn .sku-price { color: var(--text-muted); font-weight: 600; }
 .sku-btn.sold-out { opacity: .4; pointer-events: none; text-decoration: line-through; }
 .sku-btn:active { border-color: var(--primary); background: var(--primary-soft); }
 
 .add-btn {
-  width: 32px; height: 32px; border-radius: 50%;
+  position: relative;
+  width: 38px; height: 38px; border-radius: 50%;
   border: none; background: var(--primary); color: #fff;
-  font-size: 20px; cursor: pointer;
+  font-size: 22px; line-height: 1; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: transform .15s, background .15s;
+}
+/* 扩大触控热区至 44px，不影响视觉尺寸 */
+.add-btn::after {
+  content: ''; position: absolute; inset: -3px; border-radius: 50%;
 }
 .add-btn:hover { background: var(--primary-dark); }
 .add-btn:active { transform: scale(.9); }
 .add-btn:disabled { background: var(--surface-2); color: var(--text-muted); cursor: not-allowed; }
+.add-btn.popped { animation: addPop .45s cubic-bezier(.34, 1.56, .64, 1); }
+@keyframes addPop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.28); background: var(--success); }
+  100% { transform: scale(1); }
+}
 </style>

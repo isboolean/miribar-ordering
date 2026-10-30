@@ -4,6 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>MiriBar 在线点餐</title>
+  <script>
+    // 首屏前应用主题，避免暗色模式闪烁 (FOUC)
+    try {
+      var t = localStorage.getItem('miribar-theme') || 'auto';
+      var dark = t === 'dark' || (t === 'auto' && matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+    } catch (e) { }
+  </script>
 </head>
 <body>
   <div id="app"></div>

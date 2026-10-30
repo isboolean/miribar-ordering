@@ -32,6 +32,10 @@
     <select id="selectByOrgCode" resultMap="OrgResult">
         SELECT * FROM t_org WHERE org_code = #{orgCode}
     </select>
+
+    <select id="selectMaxOrgCodeSeq" resultType="java.lang.Integer">
+        SELECT MAX(CAST(org_code AS UNSIGNED)) FROM t_org WHERE org_code REGEXP '^[0-9]{1,10}$'
+    </select>
     
     <select id="selectByParentId" resultMap="OrgResult">
         SELECT * FROM t_org WHERE parent_id = #{parentId} ORDER BY sort_order, id

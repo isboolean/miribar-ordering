@@ -1,11 +1,16 @@
 package com.miribar.ordering.controller;
 
+import com.miribar.ordering.common.BusinessException;
 import com.miribar.ordering.common.PasswordUtil;
+import com.miribar.ordering.common.PageQuery;
+import com.miribar.ordering.common.PageResult;
 import com.miribar.ordering.common.Result;
 import com.miribar.ordering.entity.Role;
 import com.miribar.ordering.entity.Staff;
 import com.miribar.ordering.mapper.StaffMapper;
+import com.miribar.ordering.mapper.StoreMapper;
 import com.miribar.ordering.service.DictDataService;
+import com.miribar.ordering.service.OrgService;
 import com.miribar.ordering.service.RoleService;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,16 +21,38 @@ import java.util.List;
 public class StaffManageController {
     
     private final StaffMapper staffMapper;
+    private final StoreMapper storeMapper;
     private final RoleService roleService;
     private final DictDataService dictDataService;
+    private final OrgService orgService;
     
     // 默认初始密码（从字典管理读取，如果没有则使用此默认值）
     private static final String FALLBACK_PASSWORD = "123456";
+
+    /** 工号固定 10 位数字，从 0000000001 开始（admin 保留原账号） */
+    private static final String STAFF_NO_FORMAT = "%010d";
+    private static final long STAFF_NO_MAX = 9999999999L;
+
+    /**
+     * 生成下一个工号（10 位数字自增）
+     * 加锁避免并发插入拿到相同工号
+     */
+    private synchronized String nextStaffNo() {
+        Long max = staffMapper.selectMaxStaffNo();
+        long next = (max == null ? 0L : max) + 1L;
+        if (next > STAFF_NO_MAX) {
+            throw new BusinessException("工号已用尽（最大 " + STAFF_NO_MAX + "）");
+        }
+        return String.format(STAFF_NO_FORMAT, next);
+    }
     
-    public StaffManageController(StaffMapper staffMapper, RoleService roleService, DictDataService dictDataService) {
+    public StaffManageController(StaffMapper staffMapper, StoreMapper storeMapper, RoleService roleService,
+                                 DictDataService dictDataService, OrgService orgService) {
         this.staffMapper = staffMapper;
+        this.storeMapper = storeMapper;
         this.roleService = roleService;
         this.dictDataService = dictDataService;
+        this.orgService = orgService;
     }
     
     /**
@@ -37,23 +64,50 @@ public class StaffManageController {
     }
     
     /**
-     * 获取员工列表
+     * 分页获取员工列表
+     *
+     * @param storeId  门店ID（可选）
+     * @param orgId    机构ID（可选，含该机构下所有下级机构的员工）
+     * @param keyword  工号/姓名/手机号（可选）
+     * @param phone    手机号（模糊，可选）
+     * @param role     角色（可选）
+     * @param status   状态（可选）
+     * @param page     页码，默认 1
+     * @param pageSize 每页条数，默认 10，可选 15 / 30
      */
     @GetMapping("/list")
-    public Result<List<Staff>> list(
+    public Result<PageResult<Staff>> list(
             @RequestParam(required = false) Long storeId,
-            @RequestParam(required = false) String keyword) {
-        List<Staff> staffs;
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            staffs = staffMapper.selectByKeyword(keyword.trim());
-        } else if (storeId != null) {
-            staffs = staffMapper.selectByStoreId(storeId);
-        } else {
-            staffs = staffMapper.selectAll();
+            @RequestParam(required = false) Long orgId,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String phone,
+            @RequestParam(required = false) Integer role,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer pageSize) {
+        int current = PageQuery.page(page);
+        int size = PageQuery.pageSize(pageSize);
+        List<Long> orgIds = orgId == null ? null : orgService.getOrgTreeIds(orgId);
+        String kw = trimToNull(keyword);
+        String phoneKw = trimToNull(phone);
+
+        long total = staffMapper.countByCondition(storeId, orgIds, kw, phoneKw, role, status);
+        if (total == 0) {
+            return Result.success(PageResult.empty(0, current, size));
         }
+        List<Staff> staffs = staffMapper.selectPage(storeId, orgIds, kw, phoneKw, role, status,
+                PageQuery.offset(current, size), size);
         // 清除密码字段
         staffs.forEach(s -> s.setPassword(null));
-        return Result.success(staffs);
+        return Result.success(PageResult.of(staffs, total, current, size));
+    }
+
+    private static String trimToNull(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
     
     /**
@@ -74,10 +128,33 @@ public class StaffManageController {
      */
     @PostMapping
     public Result<Void> add(@RequestBody Staff staff) {
-        // 检查用户名是否已存在
-        Staff existing = staffMapper.selectByUsername(staff.getUsername());
-        if (existing != null) {
-            return Result.error(400, "用户名已存在");
+        // 工号由系统统一生成（10 位数字，从 0000000001 起），忽略前端传入值
+        String staffNo = nextStaffNo();
+        
+        // 检查工号是否已存在（兜底，正常不会命中）
+        if (staffMapper.selectByUsername(staffNo) != null) {
+            return Result.error(400, "工号生成冲突，请重试");
+        }
+        staff.setUsername(staffNo);
+        
+        // 员工必须归属机构，且机构必须存在
+        if (staff.getOrgId() == null) {
+            return Result.error(400, "请选择所属机构");
+        }
+        if (orgService.getById(staff.getOrgId()) == null) {
+            return Result.error(400, "所属机构不存在");
+        }
+        
+        // 门店ID为空时按机构反查门店，仍取不到则用第一个门店兜底
+        if (staff.getStoreId() == null) {
+            Long storeId = storeMapper.selectIdByOrgId(staff.getOrgId());
+            if (storeId == null) {
+                storeId = storeMapper.selectFirstId();
+            }
+            if (storeId == null) {
+                return Result.error(400, "系统还没有门店，请先创建门店");
+            }
+            staff.setStoreId(storeId);
         }
         
         // 设置默认密码（加密，从字典管理读取）
@@ -101,16 +178,14 @@ public class StaffManageController {
             return Result.error(404, "员工不存在");
         }
         
-        // 如果修改了用户名，检查是否与其他员工冲突
-        if (staff.getUsername() != null && !staff.getUsername().equals(existing.getUsername())) {
-            Staff conflict = staffMapper.selectByUsername(staff.getUsername());
-            if (conflict != null && !conflict.getId().equals(staff.getId())) {
-                return Result.error(400, "用户名已存在");
-            }
-        }
-        
-        // 不允许通过此接口修改密码
+        // 工号一经生成不允许修改，密码也不允许通过此接口修改
+        staff.setUsername(null);
         staff.setPassword(null);
+        
+        // 若调整所属机构，校验机构存在
+        if (staff.getOrgId() != null && orgService.getById(staff.getOrgId()) == null) {
+            return Result.error(400, "所属机构不存在");
+        }
         
         staffMapper.update(staff);
         return Result.success(null);

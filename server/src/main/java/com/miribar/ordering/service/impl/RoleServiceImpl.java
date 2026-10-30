@@ -1,5 +1,7 @@
 package com.miribar.ordering.service.impl;
 
+import com.miribar.ordering.common.PageQuery;
+import com.miribar.ordering.common.PageResult;
 import com.miribar.ordering.entity.Role;
 import com.miribar.ordering.entity.RoleMenu;
 import com.miribar.ordering.entity.StaffRole;
@@ -34,6 +36,18 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public List<Role> listEnabled() {
         return roleMapper.selectByStatus(1);
+    }
+
+    @Override
+    public PageResult<Role> page(String roleName, String roleCode, Integer dataScope, Integer status,
+                                 int page, int pageSize) {
+        long total = roleMapper.countByCondition(roleName, roleCode, dataScope, status);
+        if (total == 0) {
+            return PageResult.empty(0, page, pageSize);
+        }
+        List<Role> rows = roleMapper.selectPage(roleName, roleCode, dataScope, status,
+                PageQuery.offset(page, pageSize), pageSize);
+        return PageResult.of(rows, total, page, pageSize);
     }
     
     @Override

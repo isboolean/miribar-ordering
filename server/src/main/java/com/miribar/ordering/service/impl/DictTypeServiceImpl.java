@@ -1,5 +1,7 @@
 package com.miribar.ordering.service.impl;
 
+import com.miribar.ordering.common.PageQuery;
+import com.miribar.ordering.common.PageResult;
 import com.miribar.ordering.entity.DictType;
 import com.miribar.ordering.mapper.DictTypeMapper;
 import com.miribar.ordering.service.DictTypeService;
@@ -25,6 +27,18 @@ public class DictTypeServiceImpl implements DictTypeService {
     @Override
     public List<DictType> listEnabled() {
         return dictTypeMapper.selectByStatus(1);
+    }
+
+    @Override
+    public PageResult<DictType> page(String dictName, String dictType, Integer status,
+                                     int page, int pageSize) {
+        long total = dictTypeMapper.countByCondition(dictName, dictType, status);
+        if (total == 0) {
+            return PageResult.empty(0, page, pageSize);
+        }
+        List<DictType> rows = dictTypeMapper.selectPage(dictName, dictType, status,
+                PageQuery.offset(page, pageSize), pageSize);
+        return PageResult.of(rows, total, page, pageSize);
     }
     
     @Override

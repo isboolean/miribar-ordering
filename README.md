@@ -53,6 +53,7 @@ miribar-ordering/
 │   │   └── router/         # 路由配置
 │   ├── package.json
 │   └── vite.config.js
+├── miribar-miniprogram/    # 顾客端微信小程序（独立工程，可单独打包提审）
 ── server/                 # 后端项目（Spring Boot）
 │   ├── src/main/java/
 │   │   └── com/miribar/ordering/
@@ -104,6 +105,20 @@ source server/sql/schema.sql
 cd server
 mvn spring-boot:run
 ```
+
+### 顾客端（微信小程序）
+
+顾客端小程序位于 `miribar-miniprogram/`（独立前端工程，微信原生开发），复用同一套后端接口与数据模型，可单独打包提审部署。
+
+- **扫码点餐**：桌台小程序码 `scene` 编码 `qrToken`，扫码后自动识别门店与桌位；同时兼容存量 H5 桌码（普通链接二维码）与站内扫码
+- **完整流程**：菜单浏览（多规格/售罄）→ 购物车 → 下单（线下结账，3 秒防重）→ 订单跟踪（15 秒轮询）→ 加单
+- **登录**：`wx.login` 静默登录（`POST /api/auth/customer/wx-login`，code2Session 换 openid 自动注册 t_customer），手机号绑定可选、不登录也可点餐
+- **桌码生成**：员工接口 `GET /api/table/{id}/wxa-qrcode` 生成桌台小程序码（scene=qrToken），用于打印
+- **配置**：后端 `application.yml` 需配置 `wx.miniapp.app-id/app-secret`；小程序端 `miribar-miniprogram/utils/config.js` 配置后端 BASE_URL；详细设计见《小程序项目档案.md》
+
+启动：用微信开发者工具导入 `miribar-miniprogram/` 目录即可（后端先按上文步骤启动）。
+
+**一键打包**：根目录执行 `./pack-miniprogram.sh [版本号]`，产出 `release/miribar-miniprogram_v{版本}_{时间}.zip`（自动排除 `project.private.config.json` 等本地配置，产物目录已加入 .gitignore）。
 
 ### 顾客登录（H5）
 

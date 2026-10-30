@@ -16,6 +16,9 @@ public interface OrgMapper {
     Org selectById(@Param("id") Long id);
     
     Org selectByOrgCode(@Param("orgCode") String orgCode);
+
+    /** 当前最大的纯数字机构编码序号（无数据返回 null） */
+    Integer selectMaxOrgCodeSeq();
     
     List<Org> selectByParentId(@Param("parentId") Long parentId);
     

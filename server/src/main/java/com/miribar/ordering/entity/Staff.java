@@ -7,7 +7,8 @@ import java.time.LocalDateTime;
 public class Staff {
     private Long id;
     private Long storeId;
-    private Long orgId; // 新增：所属组织ID
+    private Long orgId; // 所属组织ID
+    private String orgName; // 所属组织名称（关联查询，非表字段）
     private String username;
     private String password;
     private String phone;

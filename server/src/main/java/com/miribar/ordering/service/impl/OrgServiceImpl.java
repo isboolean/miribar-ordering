@@ -1,8 +1,10 @@
 package com.miribar.ordering.service.impl;
 
+import com.miribar.ordering.common.BusinessException;
 import com.miribar.ordering.entity.Org;
 import com.miribar.ordering.mapper.OrgMapper;
 import com.miribar.ordering.service.OrgService;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,10 +16,27 @@ import java.util.Map;
 @Service
 public class OrgServiceImpl implements OrgService {
     
+    /** 机构编码固定 10 位数字，从 000000001 开始 */
+    private static final String ORG_CODE_FORMAT = "%010d";
+    private static final long ORG_CODE_MAX = 9999999999L;
+    
     private final OrgMapper orgMapper;
     
     public OrgServiceImpl(OrgMapper orgMapper) {
         this.orgMapper = orgMapper;
+    }
+    
+    /**
+     * 生成下一个机构编码（10 位数字，全局自增）
+     * 加锁避免并发插入拿到相同编码，唯一索引作为最终兜底
+     */
+    private synchronized String nextOrgCode() {
+        Integer max = orgMapper.selectMaxOrgCodeSeq();
+        long next = (max == null ? 0L : max.longValue()) + 1L;
+        if (next > ORG_CODE_MAX) {
+            throw new BusinessException("机构编码已达上限（" + ORG_CODE_MAX + "）");
+        }
+        return String.format(ORG_CODE_FORMAT, next);
     }
     
     @Override
@@ -49,11 +68,9 @@ public class OrgServiceImpl implements OrgService {
     @Override
     @Transactional
     public void add(Org org) {
-        // 检查组织编码是否已存在
-        Org existing = orgMapper.selectByOrgCode(org.getOrgCode());
-        if (existing != null) {
-            throw new RuntimeException("组织编码已存在：" + org.getOrgCode());
-        }
+        // 机构编码由系统统一生成（10 位数字，从 000000001 起），忽略前端传入值
+        String orgCode = nextOrgCode();
+        org.setOrgCode(orgCode);
         
         if (org.getSortOrder() == null) {
             org.setSortOrder(0);
@@ -65,20 +82,22 @@ public class OrgServiceImpl implements OrgService {
             org.setParentId(0L);
         }
         
-        orgMapper.insert(org);
+        try {
+            orgMapper.insert(org);
+        } catch (DuplicateKeyException e) {
+            throw new BusinessException("机构编码生成冲突，请重试");
+        }
     }
     
     @Override
     @Transactional
     public void update(Org org) {
-        // 如果修改了组织编码，检查是否与其他组织冲突
+        // 机构编码一经生成不允许修改
         Org existing = orgMapper.selectById(org.getId());
-        if (existing != null && !existing.getOrgCode().equals(org.getOrgCode())) {
-            Org conflict = orgMapper.selectByOrgCode(org.getOrgCode());
-            if (conflict != null && !conflict.getId().equals(org.getId())) {
-                throw new RuntimeException("组织编码已存在：" + org.getOrgCode());
-            }
+        if (existing == null) {
+            throw new BusinessException("机构不存在：" + org.getId());
         }
+        org.setOrgCode(existing.getOrgCode());
         
         orgMapper.update(org);
     }

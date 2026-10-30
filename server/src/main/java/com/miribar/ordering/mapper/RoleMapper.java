@@ -24,4 +24,27 @@ public interface RoleMapper {
     int deleteById(@Param("id") Long id);
     
     List<Role> selectRolesByStaffId(@Param("staffId") Long staffId);
+
+    /**
+     * 分页查询角色
+     *
+     * @param roleName  角色名称模糊匹配（可选）
+     * @param roleCode  角色编码模糊匹配（可选）
+     * @param dataScope 数据范围（可选）
+     * @param status    状态（可选）
+     * @param offset    偏移量
+     * @param pageSize  每页条数
+     */
+    List<Role> selectPage(@Param("roleName") String roleName,
+                          @Param("roleCode") String roleCode,
+                          @Param("dataScope") Integer dataScope,
+                          @Param("status") Integer status,
+                          @Param("offset") int offset,
+                          @Param("pageSize") int pageSize);
+
+    /** 统计满足条件的角色总数（与 selectPage 条件一致） */
+    long countByCondition(@Param("roleName") String roleName,
+                          @Param("roleCode") String roleCode,
+                          @Param("dataScope") Integer dataScope,
+                          @Param("status") Integer status);
 }

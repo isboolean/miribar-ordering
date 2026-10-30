@@ -1,0 +1,7 @@
+{
+  "desc": "MiriBar 扫码点餐小程序，仅收录入口页",
+  "rules": [
+    { "action": "allow", "page": "pages/index/index" },
+    { "action": "disallow", "page": "*" }
+  ]
+}
