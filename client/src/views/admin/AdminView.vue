@@ -3,6 +3,12 @@
     <header class="header">
       <h1>MiriBar 管理后台</h1>
       <div class="header-user">
+        <label v-if="stores.length > 0" class="header-store-picker">
+          <span class="header-store-label">店铺</span>
+          <select class="form-input store-select" v-model.number="activeStoreId">
+            <option v-for="s in stores" :key="s.id" :value="s.id">{{ s.name }}</option>
+          </select>
+        </label>
         <span class="header-user-info">{{ auth.displayName }} | {{ roleText }}</span>
         <button class="btn btn-outline btn-sm" @click="handleLogout">退出登录</button>
       </div>
@@ -71,6 +77,7 @@
           <div class="table-grid">
             <div v-for="t in tables" :key="t.id" class="table-card" :class="'status-' + t.status">
               <div class="table-num">{{ t.tableNumber }}</div>
+              <div class="table-store">🏪 {{ t.storeName || '未关联店铺' }}</div>
               <div class="table-seats">{{ t.seats }}人桌</div>
               <div class="table-status">
                 <span class="badge" :class="tableStatusBadge(t.status)">{{ tableStatusText(t.status) }}</span>
@@ -168,6 +175,7 @@
             <div class="bill-header">
               <div>
                 <span class="bill-table">🪑 {{ bill.table.tableNumber }}</span>
+                <span class="bill-store">🏪 {{ bill.table.storeName || bill.storeName || '未关联店铺' }}</span>
                 <span class="badge badge-warning bill-badge">{{ bill.orderCount || 0 }}单</span>
               </div>
               <div class="bill-right">
@@ -201,6 +209,13 @@
       <div class="modal-box">
         <h3>{{ tableModal.id ? '编辑桌台' : '新增桌台' }}</h3>
         <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">所属店铺</label>
+            <select v-if="!tableModal.id" class="form-input" v-model.number="tableModal.storeId">
+              <option v-for="s in stores" :key="s.id" :value="s.id">{{ s.name }}</option>
+            </select>
+            <input v-else class="form-input" :value="tableModal.storeName || '-'" readonly title="桌台归属店铺不可修改" />
+          </div>
           <div class="form-group">
             <label class="form-label">桌号</label>
             <input class="form-input" v-model="tableModal.tableNumber" placeholder="如 A01" />
@@ -302,7 +317,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, markRaw, defineAsyncComponent } from 'vue'
+import { ref, reactive, computed, onMounted, watch, markRaw, defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import SearchFilterBar from '@/components/SearchFilterBar.vue'
@@ -310,7 +325,7 @@ import {
   getTables, addTable, updateTable, deleteTable, clearTable,
   adminGetCategories, adminAddCategory, adminUpdateCategory, adminDeleteCategory,
   adminGetProducts, adminAddProduct, adminUpdateProductStatus, adminDeleteProduct,
-  getTableBill, checkoutTable
+  getTableBill, checkoutTable, getStoreManageList
 } from '@/api'
 
 // 导入动态组件
@@ -388,9 +403,29 @@ function loadContent(key) {
   else if (key === 'checkout') loadBills()
 }
 
-const STORE_ID = 1
+const STORE_ID = 1 // 兜底：店铺列表加载失败时的默认店铺
 const typeMap = { 0: '酒水', 1: '小食', 2: '套餐' }
 const orderStatusMap = { 0: '待接单', 1: '制作中', 2: '已完成', 3: '已拒单', 4: '已取消', 5: '已结账' }
+
+// ========== 店铺范围（与组织管理关联） ==========
+const STORE_ID_KEY = 'miribar_active_store_id'
+const stores = ref([])
+const activeStoreId = ref(Number(localStorage.getItem(STORE_ID_KEY)) || null)
+const currentStoreId = computed(() => activeStoreId.value || STORE_ID)
+
+async function loadStores() {
+  stores.value = await getStoreManageList().catch(() => [])
+  if (stores.value.length > 0 && !stores.value.some(s => s.id === activeStoreId.value)) {
+    activeStoreId.value = stores.value[0].id
+  }
+}
+
+watch(activeStoreId, (val) => {
+  if (val) localStorage.setItem(STORE_ID_KEY, String(val))
+  else localStorage.removeItem(STORE_ID_KEY)
+  // 切换店铺后刷新当前业务内容，保证按店铺维度隔离
+  if (activeContent.value) loadContent(activeContent.value)
+})
 
 const tables = ref([])
 const categories = ref([])
@@ -514,18 +549,20 @@ function resetCheckoutFilters() {
 }
 
 // Modals
-const tableModal = reactive({ show: false, id: null, tableNumber: '', seats: 4 })
+const tableModal = reactive({ show: false, id: null, storeId: null, storeName: '', tableNumber: '', seats: 4 })
 const categoryModal = reactive({ show: false, id: null, name: '', icon: '', sortOrder: 0 })
 const productModal = reactive({ show: false, name: '', categoryId: null, productType: 0, description: '', tags: '', containsAlcohol: 1, imageUrl: '', skuStr: '' })
 
 // ========== Tables ==========
-async function loadTables() { tables.value = await getTables(STORE_ID).catch(() => []) }
+async function loadTables() { tables.value = await getTables(currentStoreId.value).catch(() => []) }
 
 function tableStatusText(s) { return s === 0 ? '空闲' : s === 1 ? '已开台' : '已清台' }
 function tableStatusBadge(s) { return s === 0 ? 'badge-success' : s === 1 ? 'badge-warning' : 'badge-muted' }
 
 function openTableModal(t) {
   tableModal.id = t?.id || null
+  tableModal.storeId = t?.storeId || activeStoreId.value || stores.value[0]?.id || STORE_ID
+  tableModal.storeName = t?.storeName || stores.value.find(s => s.id === t?.storeId)?.name || ''
   tableModal.tableNumber = t?.tableNumber || ''
   tableModal.seats = t?.seats || 4
   tableModal.show = true
@@ -537,7 +574,7 @@ async function handleSaveTable() {
     if (tableModal.id) {
       await updateTable(tableModal.id, { tableNumber: tableModal.tableNumber, seats: tableModal.seats })
     } else {
-      await addTable({ storeId: STORE_ID, tableNumber: tableModal.tableNumber, seats: tableModal.seats, status: 0 })
+      await addTable({ storeId: tableModal.storeId || currentStoreId.value, tableNumber: tableModal.tableNumber, seats: tableModal.seats, status: 0 })
     }
     tableModal.show = false
     showToast('保存成功')
@@ -556,7 +593,7 @@ async function handleClearTable(id) {
 }
 
 // ========== Categories ==========
-async function loadCategories() { categories.value = await adminGetCategories(STORE_ID).catch(() => []) }
+async function loadCategories() { categories.value = await adminGetCategories(currentStoreId.value).catch(() => []) }
 
 function openCategoryModal(c) {
   categoryModal.id = c?.id || null
@@ -569,7 +606,7 @@ function openCategoryModal(c) {
 async function handleSaveCategory() {
   if (!categoryModal.name.trim()) { alert('请输入分类名称'); return }
   try {
-    const body = { storeId: STORE_ID, name: categoryModal.name, icon: categoryModal.icon, sortOrder: categoryModal.sortOrder, status: 1 }
+    const body = { storeId: currentStoreId.value, name: categoryModal.name, icon: categoryModal.icon, sortOrder: categoryModal.sortOrder, status: 1 }
     if (categoryModal.id) {
       await adminUpdateCategory(categoryModal.id, body)
     } else {
@@ -587,7 +624,7 @@ async function handleDeleteCategory(id) {
 }
 
 // ========== Products ==========
-async function loadProducts() { products.value = await adminGetProducts(STORE_ID).catch(() => []) }
+async function loadProducts() { products.value = await adminGetProducts(currentStoreId.value).catch(() => []) }
 
 function openProductModal() {
   productModal.name = ''; productModal.description = ''; productModal.tags = ''
@@ -607,7 +644,7 @@ async function handleSaveProduct() {
   try {
     await adminAddProduct({
       product: {
-        storeId: STORE_ID, categoryId: productModal.categoryId, name: productModal.name,
+        storeId: currentStoreId.value, categoryId: productModal.categoryId, name: productModal.name,
         description: productModal.description, productType: productModal.productType,
         tags: productModal.tags, containsAlcohol: productModal.containsAlcohol,
         imageUrl: productModal.imageUrl.trim(), status: 1
@@ -632,7 +669,7 @@ async function handleDeleteProduct(id) {
 // ========== Checkout ==========
 async function loadBills() {
   try {
-    const allTables = await getTables(STORE_ID)
+    const allTables = await getTables(currentStoreId.value)
     const occupied = allTables.filter(t => t.status === 1)
     const result = []
     for (const t of occupied) {
@@ -655,8 +692,9 @@ function showToast(msg) {
   setTimeout(() => { toast.value = '' }, 2000)
 }
 
-onMounted(() => {
-  // 默认加载桌台
+onMounted(async () => {
+  // 先加载可见店铺列表（按员工数据范围），再默认加载桌台
+  await loadStores()
   loadTables()
 })
 </script>
@@ -671,6 +709,11 @@ onMounted(() => {
 }
 .header h1 { font-size: var(--font-xl); font-weight: 600; }
 .header-user-info { font-size: var(--font-sm); opacity: .8; }
+.header-store-picker { display: inline-flex; align-items: center; gap: 6px; margin-right: 12px; }
+.header-store-label { font-size: var(--font-sm); color: var(--text-muted); }
+.store-select { width: 180px; padding: 4px 8px; font-size: 13px; }
+.table-store { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+.bill-store { font-size: 13px; color: var(--text-muted); margin-left: 8px; }
 .icon-cell { font-size: var(--font-2xl); }
 .hint-text { font-size: var(--font-sm); color: var(--text-muted); }
 .bill-badge { margin-left: var(--space-2); }

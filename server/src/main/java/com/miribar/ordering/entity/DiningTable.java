@@ -11,6 +11,7 @@ public class DiningTable {
     private String qrToken;
     private Integer seats;
     private Integer status;
+    private String storeName; // 所属店铺名称（关联查询，非表字段）
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

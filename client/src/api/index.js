@@ -78,6 +78,8 @@ export const getCustomerMe = () => request('/auth/customer/me', { auth: 'custome
 
 // ========== 门店 ==========
 export const getStore = (id) => request(`/store/${id}`)
+// 管理端：当前员工可见店铺列表（按数据范围过滤），业务管理模块店铺联动用
+export const getStoreManageList = () => request('/store/manage/list')
 
 // ========== 菜单 ==========
 export const getMenu = (storeId) => request(`/menu/store/${storeId}`)

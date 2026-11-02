@@ -3,15 +3,22 @@
 <mapper namespace="com.miribar.ordering.mapper.TableMapper">
 
     <select id="selectByStoreId" resultType="DiningTable">
-        SELECT * FROM t_dining_table WHERE store_id = #{storeId} ORDER BY table_number
+        SELECT t.*, s.name AS store_name
+        FROM t_dining_table t LEFT JOIN t_store s ON s.id = t.store_id
+        WHERE t.store_id = #{storeId}
+        ORDER BY t.table_number
     </select>
 
     <select id="selectById" resultType="DiningTable">
-        SELECT * FROM t_dining_table WHERE id = #{id}
+        SELECT t.*, s.name AS store_name
+        FROM t_dining_table t LEFT JOIN t_store s ON s.id = t.store_id
+        WHERE t.id = #{id}
     </select>
 
     <select id="selectByQrToken" resultType="DiningTable">
-        SELECT * FROM t_dining_table WHERE qr_token = #{qrToken}
+        SELECT t.*, s.name AS store_name
+        FROM t_dining_table t LEFT JOIN t_store s ON s.id = t.store_id
+        WHERE t.qr_token = #{qrToken}
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">

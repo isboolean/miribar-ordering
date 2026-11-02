@@ -14,4 +14,26 @@
         SELECT id FROM t_store ORDER BY id LIMIT 1
     </select>
 
+    <select id="selectByOrgIds" resultType="Store">
+        SELECT s.*, o.org_name AS org_name
+        FROM t_store s LEFT JOIN t_org o ON o.id = s.org_id
+        WHERE s.org_id IN
+        <foreach collection="orgIds" item="oid" open="(" separator="," close=")">#{oid}</foreach>
+        ORDER BY s.id
+    </select>
+
+    <select id="selectByIds" resultType="Store">
+        SELECT s.*, o.org_name AS org_name
+        FROM t_store s LEFT JOIN t_org o ON o.id = s.org_id
+        WHERE s.id IN
+        <foreach collection="storeIds" item="sid" open="(" separator="," close=")">#{sid}</foreach>
+        ORDER BY s.id
+    </select>
+
+    <select id="selectAllStores" resultType="Store">
+        SELECT s.*, o.org_name AS org_name
+        FROM t_store s LEFT JOIN t_org o ON o.id = s.org_id
+        ORDER BY s.id
+    </select>
+
 </mapper>
