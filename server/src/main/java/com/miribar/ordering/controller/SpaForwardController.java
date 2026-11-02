@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class SpaForwardController {
 
     @GetMapping(value = {
+        "/login",
         "/customer", "/customer/**",
         "/kitchen", "/kitchen/**",
         "/admin", "/admin/**"
