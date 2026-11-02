@@ -692,10 +692,41 @@ function showToast(msg) {
   setTimeout(() => { toast.value = '' }, 2000)
 }
 
+/** 挑选默认选中的菜单：优先 业务管理>桌台管理，否则取第一个目录的第一个子菜单，再否则取第一个菜单项 */
+function pickDefaultMenu() {
+  const menus = visibleMenus.value || []
+  let firstGroupChild = null
+  let firstMenuItem = null
+  for (const m of menus) {
+    if (m.menuType === 0 && m.children && m.children.length > 0) {
+      if (!firstGroupChild) {
+        firstGroupChild = { group: m, child: m.children.find(c => c.path === '/admin/tables') || m.children[0] }
+      } else if (!firstGroupChild.child || firstGroupChild.child.path !== '/admin/tables') {
+        const t = m.children.find(c => c.path === '/admin/tables')
+        if (t) firstGroupChild = { group: m, child: t }
+      }
+    } else if (m.menuType === 1 && !firstMenuItem) {
+      firstMenuItem = m
+    }
+  }
+  if (firstGroupChild) return firstGroupChild
+  if (firstMenuItem) return { group: null, child: firstMenuItem }
+  return null
+}
+
 onMounted(async () => {
-  // 先加载可见店铺列表（按员工数据范围），再默认加载桌台
+  // 先加载可见店铺列表（按员工数据范围）
   await loadStores()
-  loadTables()
+  // 默认选中一个菜单，保证登录后页面表现一致；无动态菜单时兜底加载桌台
+  const def = pickDefaultMenu()
+  if (def) {
+    if (def.group && !expandedGroups.value.includes(def.group.id)) {
+      expandedGroups.value.push(def.group.id)
+    }
+    navigateTo(def.child)
+  } else {
+    loadTables()
+  }
 })
 </script>
 
